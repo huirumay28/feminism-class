@@ -1,5 +1,11 @@
+// Forgiving comparison: trim whitespace (incl. full-width spaces), NFKC
+// (full-width letters/digits -> ASCII), and ignore case (phone auto-capitalize).
+export function normalizePasscode(value: string): string {
+  return value.normalize('NFKC').replace(/\s+/g, '').toLowerCase();
+}
+
 export function getPasscode(): string {
-  return process.env.CLASS_PASSCODE || '';
+  return normalizePasscode(process.env.CLASS_PASSCODE || '');
 }
 
 export function isPasscodeConfigured(): boolean {

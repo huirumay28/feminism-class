@@ -7,7 +7,8 @@ async function token(passcode: string) {
 }
 
 export async function middleware(req: NextRequest) {
-  const passcode = process.env.CLASS_PASSCODE;
+  const raw = process.env.CLASS_PASSCODE;
+  const passcode = raw ? raw.normalize('NFKC').replace(/\s+/g, '').toLowerCase() : '';
   const { pathname } = req.nextUrl;
   if (pathname === '/login' || pathname === '/api/auth') return NextResponse.next();
   // Fail closed: no passcode configured means nobody gets in.

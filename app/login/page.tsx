@@ -1,13 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +20,8 @@ export default function LoginPage() {
       });
 
       if (response.ok) {
-        router.push('/');
-        router.refresh();
+        // Full navigation so the new cookie is sent and no cached redirect is reused.
+        window.location.assign('/');
       } else {
         const data = await response.json();
         setError(data.error || '密碼錯誤');
@@ -53,6 +51,10 @@ export default function LoginPage() {
               onChange={(e) => setPasscode(e.target.value)}
               className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
               placeholder="密碼"
+              autoComplete="current-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               disabled={loading}
             />
           </div>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPasscode, isPasscodeConfigured, authToken } from '@/lib/auth';
+import { getPasscode, isPasscodeConfigured, authToken, normalizePasscode } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   if (!isPasscodeConfigured()) {
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Passcode is required' }, { status: 400 });
   }
 
-  if (passcode === getPasscode()) {
+  if (typeof passcode === 'string' && normalizePasscode(passcode) === getPasscode()) {
     const response = NextResponse.json({ success: true });
     response.cookies.set('feminism-class-auth', await authToken(getPasscode()), {
       maxAge: 60 * 60 * 24 * 30,
