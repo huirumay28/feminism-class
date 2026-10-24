@@ -1,0 +1,182 @@
+{
+  "title": "台灣女性主義與公益實務",
+  "subtitle": "24週課程規劃",
+  "duration": "6個月 (24週)",
+  "description": "以台灣女性主義為核心的社會史、文化研究與公益實務教育課程",
+  "modules": [
+    {
+      "moduleNumber": 1,
+      "title": "台灣女性主義與民主化歷史",
+      "weeks": "Weeks 1-4",
+      "description": "從威權時期、1970 年代新女性主義、《婦女新知》創刊到解嚴後的婦女運動。",
+      "learningGoal": "理解今天的女性權益是如何爭取而來的。",
+      "weekTopics": [
+        {
+          "week": 1,
+          "title": "台灣現代婦女運動如何在威權時期形成？(1970–1987)",
+          "status": "available"
+        },
+        {
+          "week": 2,
+          "title": "解嚴後的法律改革與制度化 (1987–2000)",
+          "status": "upcoming"
+        },
+        {
+          "week": 3,
+          "title": "民主化過程中的婦女參政",
+          "status": "upcoming"
+        },
+        {
+          "week": 4,
+          "title": "從街頭到體制:運動策略的轉變",
+          "status": "upcoming"
+        }
+      ]
+    },
+    {
+      "moduleNumber": 2,
+      "title": "女性主義思想與文化史",
+      "weeks": "Weeks 5-8",
+      "description": "自由主義、基進女性主義、社會主義女性主義、交織性,以及女性在時尚、音樂、藝術、出版與龐克次文化中的表達。",
+      "learningGoal": "建立自己的女性主義知識基礎,也為未來品牌內容建立有深度的文化素材庫。",
+      "weekTopics": [
+        {
+          "week": 5,
+          "title": "女性主義的主要流派",
+          "status": "upcoming"
+        },
+        {
+          "week": 6,
+          "title": "交織性與多元身分",
+          "status": "upcoming"
+        },
+        {
+          "week": 7,
+          "title": "女性主義與流行文化",
+          "status": "upcoming"
+        },
+        {
+          "week": 8,
+          "title": "藝術、音樂與次文化中的女性表達",
+          "status": "upcoming"
+        }
+      ]
+    },
+    {
+      "moduleNumber": 3,
+      "title": "當代台灣女性的社會處境",
+      "weeks": "Weeks 9-12",
+      "description": "家暴、性暴力、職場平權、無酬照顧、經濟自主、身體自主,以及不同社會群體面臨的障礙。",
+      "learningGoal": "從理念進入現實,理解台灣女性現在面臨什麼問題。",
+      "weekTopics": [
+        {
+          "week": 9,
+          "title": "性別暴力:家暴與性侵害",
+          "status": "upcoming"
+        },
+        {
+          "week": 10,
+          "title": "職場性別不平等",
+          "status": "upcoming"
+        },
+        {
+          "week": 11,
+          "title": "照顧勞動與經濟自主",
+          "status": "upcoming"
+        },
+        {
+          "week": 12,
+          "title": "身體自主權與生育正義",
+          "status": "upcoming"
+        }
+      ]
+    },
+    {
+      "moduleNumber": 4,
+      "title": "台灣女性主義組織與社會倡議",
+      "weeks": "Weeks 13-16",
+      "description": "深入研究婦女新知、勵馨、現代婦女基金會等團體的歷史、工作模式、政策成果、財務及服務缺口。",
+      "learningGoal": "建立未來可能合作或捐款的組織研究名單。",
+      "weekTopics": [
+        {
+          "week": 13,
+          "title": "婦女新知基金會",
+          "status": "upcoming"
+        },
+        {
+          "week": 14,
+          "title": "勵馨社會福利事業基金會",
+          "status": "upcoming"
+        },
+        {
+          "week": 15,
+          "title": "現代婦女基金會",
+          "status": "upcoming"
+        },
+        {
+          "week": 16,
+          "title": "其他重要組織與網絡",
+          "status": "upcoming"
+        }
+      ]
+    },
+    {
+      "moduleNumber": 5,
+      "title": "慈善零售/公益經濟與制度",
+      "weeks": "Weeks 17-20",
+      "description": "研究 Charity Shop、二手交易、捐贈經濟、社會企業、台灣募款規範與資金透明度。",
+      "learningGoal": "理解如何讓你的商業模式真正產生可持續的公益收入。",
+      "weekTopics": [
+        {
+          "week": 17,
+          "title": "英國慈善零售模式研究",
+          "status": "upcoming"
+        },
+        {
+          "week": 18,
+          "title": "台灣的二手交易與捐贈文化",
+          "status": "upcoming"
+        },
+        {
+          "week": 19,
+          "title": "社會企業與公益商業模式",
+          "status": "upcoming"
+        },
+        {
+          "week": 20,
+          "title": "募款規範與資金透明度",
+          "status": "upcoming"
+        }
+      ]
+    },
+    {
+      "moduleNumber": 6,
+      "title": "公益策略與實際合作",
+      "weeks": "Weeks 21-24",
+      "description": "學習評估 NGO、規劃捐款、衡量成果、訪談組織,並設計第一個小型公益合作試辦。",
+      "learningGoal": "完成一份可執行、具研究依據的公益策略。",
+      "weekTopics": [
+        {
+          "week": 21,
+          "title": "如何評估 NGO 的有效性",
+          "status": "upcoming"
+        },
+        {
+          "week": 22,
+          "title": "捐款策略與資源分配",
+          "status": "upcoming"
+        },
+        {
+          "week": 23,
+          "title": "設計小型公益合作專案",
+          "status": "upcoming"
+        },
+        {
+          "week": 24,
+          "title": "課程總結與未來行動",
+          "status": "upcoming"
+        }
+      ]
+    }
+  ]
+}
