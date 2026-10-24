@@ -24,10 +24,11 @@ Interactive weekly class website for a 24-week self-study course on Taiwan femin
 Create a `.env.local` file in the root directory:
 
 ```bash
-# Required for authentication (if not set, site is public)
+# Required for authentication (if not set, the site stays locked: fail closed)
 CLASS_PASSCODE=your-secure-passcode-here
 
 # Required for Upstash Redis (data persistence)
+# (the Vercel Marketplace Upstash integration's KV_REST_API_URL / KV_REST_API_TOKEN also work)
 UPSTASH_REDIS_REST_URL=https://your-redis-url.upstash.io
 UPSTASH_REDIS_REST_TOKEN=your-redis-token
 

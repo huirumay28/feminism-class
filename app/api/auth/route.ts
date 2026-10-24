@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPasscode, isPasscodeConfigured } from '@/lib/auth';
+import { getPasscode, isPasscodeConfigured, authToken } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   if (!isPasscodeConfigured()) {
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
   if (passcode === getPasscode()) {
     const response = NextResponse.json({ success: true });
-    response.cookies.set('feminism-class-auth', 'authenticated', {
+    response.cookies.set('feminism-class-auth', await authToken(getPasscode()), {
       maxAge: 60 * 60 * 24 * 30,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

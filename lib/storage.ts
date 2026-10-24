@@ -3,15 +3,17 @@ import { Redis } from '@upstash/redis';
 let redis: Redis | null = null;
 
 export function getRedisClient(): Redis | null {
-  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  if (!url || !token) {
     console.warn('Redis environment variables not configured. Data persistence is disabled.');
     return null;
   }
 
   if (!redis) {
     redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      url,
+      token,
     });
   }
 
