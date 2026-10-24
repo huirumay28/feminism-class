@@ -12,14 +12,14 @@ interface Item {
 interface AnswerBoxProps {
   items: Item[];
   weekNumber: number;
-  itemType: 'discussion' | 'homework';
+  itemType: 'discussion' | 'homework' | 'exercise';
 }
 
 interface Answer {
   id: string;
   weekNumber: number;
   itemId: string;
-  itemType: 'discussion' | 'homework';
+  itemType: 'discussion' | 'homework' | 'exercise';
   text: string;
   uploads?: string[];
   createdAt: number;

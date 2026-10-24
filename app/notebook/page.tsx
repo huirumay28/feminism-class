@@ -24,7 +24,7 @@ interface Answer {
   id: string;
   weekNumber: number;
   itemId: string;
-  itemType: 'discussion' | 'homework';
+  itemType: 'discussion' | 'homework' | 'exercise';
   text: string;
   uploads?: string[];
   createdAt: number;
@@ -108,7 +108,7 @@ export default function NotebookPage() {
       if (weekAnswers.length > 0) {
         markdown += `### 討論與作業\n\n`;
         weekAnswers.forEach((a) => {
-          const type = a.itemType === 'discussion' ? '討論' : '作業';
+          const type = a.itemType === 'discussion' ? '討論' : a.itemType === 'exercise' ? '練習' : '作業';
           markdown += `**[${type}]**\n\n${a.text}\n\n`;
           if (a.uploads && a.uploads.length > 0) {
             markdown += `附件：\n`;
@@ -237,7 +237,7 @@ export default function NotebookPage() {
                             className="p-4 rounded-lg bg-gray-50 border border-gray-200"
                           >
                             <div className="text-xs text-gray-600 mb-2">
-                              {answer.itemType === 'discussion' ? '討論問題' : '作業'}
+                              {answer.itemType === 'discussion' ? '討論問題' : answer.itemType === 'exercise' ? '閱讀與練習' : '作業'}
                             </div>
                             <p className="text-sm whitespace-pre-wrap">{answer.text}</p>
                             {answer.uploads && answer.uploads.length > 0 && (

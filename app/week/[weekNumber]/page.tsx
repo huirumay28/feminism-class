@@ -42,6 +42,7 @@ interface WeekData {
   readings: Reading[];
   discussionQuestions: DiscussionQuestion[];
   homework: Homework[];
+  exercises?: { id: string; question: string }[];
   nextWeekPreview: string;
 }
 
@@ -129,6 +130,18 @@ export default async function WeekPage({
         <h2 className="text-2xl font-semibold mb-6">延伸閱讀清單</h2>
         <ReadingChecklist readings={weekData.readings} weekNumber={weekData.weekNumber} />
       </section>
+
+      {weekData.exercises && weekData.exercises.length > 0 && (
+        <section className="mb-12">
+          <h2 className="text-2xl font-semibold mb-2">閱讀問題與練習</h2>
+          <p className="text-sm text-gray-600 mb-6">每題都可以寫下回答並上傳檔案。</p>
+          <AnswerBox
+            items={weekData.exercises}
+            weekNumber={weekData.weekNumber}
+            itemType="exercise"
+          />
+        </section>
+      )}
 
       {weekData.discussionQuestions && weekData.discussionQuestions.length > 0 && (
         <section className="mb-12">
