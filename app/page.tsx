@@ -3,13 +3,14 @@ import curriculum from '@/content/curriculum.json';
 
 interface WeekTopic { week: number; title: string; status: 'available' | 'upcoming' }
 interface Module { moduleNumber: number; title: string; weeks: string; description: string; learningGoal: string; weekTopics: WeekTopic[] }
-interface Curriculum { title: string; subtitle: string; duration: string; description: string; modules: Module[] }
+interface Curriculum { currentWeek?: number; title: string; subtitle: string; duration: string; description: string; modules: Module[] }
 
 const TABS = ['var(--t1)', 'var(--t2)', 'var(--t3)', 'var(--t4)', 'var(--t5)', 'var(--t6)'];
 
 
 export default function Home() {
   const c = curriculum as unknown as Curriculum;
+  const cur = c.currentWeek ?? 1;
   return (
     <div className="wrap">
       <div className="folder">
@@ -25,7 +26,8 @@ export default function Home() {
           <p style={{ margin: 0, maxWidth: 640 }}>{c.description}</p>
           <p className="mono small muted" style={{ marginTop: 10 }}>{c.duration} · 每週閱讀 ≤ 2 小時</p>
           <div style={{ marginTop: 18, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <Link href="/week/1" className="btn primary">開始 Week 01 →</Link>
+            <Link href={`/week/${cur}`} className="btn primary">本週 Week {String(cur).padStart(2, '0')} →</Link>
+            {cur > 1 && <Link href="/week/1" className="btn">Week 01</Link>}
             <Link href="/notebook" className="btn">我的筆記</Link>
           </div>
           <div className="months">
@@ -51,7 +53,7 @@ export default function Home() {
                   <td className="w">{String(w.week).padStart(2, '0')}</td>
                   <td>{w.status === 'available' ? <Link href={`/week/${w.week}`}>{w.title}</Link> : <span className="muted">{w.title}</span>}</td>
                   <td className="w">{String(m.moduleNumber).padStart(2, '0')}</td>
-                  <td>{w.status === 'available' ? <span className="chip on">OPEN</span> : <span className="chip">SOON</span>}</td>
+                  <td>{w.week === cur ? <span className="chip on">本週 NOW</span> : w.status === 'available' ? <span className="chip" style={{ background: 'var(--yellow)' }}>OPEN</span> : <span className="chip">SOON</span>}</td>
                 </tr>
               ))
             )}

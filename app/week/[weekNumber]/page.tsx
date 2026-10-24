@@ -1,4 +1,5 @@
 import week01 from '@/content/weeks/week-01.json';
+import week02 from '@/content/weeks/week-02.json';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Lesson, { type LessonChapter, type Figure } from '@/components/Lesson';
@@ -15,7 +16,7 @@ interface WeekData {
 
 const C = ['var(--t1)', 'var(--t2)', 'var(--t3)', 'var(--t4)', 'var(--t5)', 'var(--t6)', 'var(--t7)', 'var(--t8)', 'var(--yellow)'];
 
-const WEEKS: Record<string, WeekData> = { '1': week01 as unknown as WeekData };
+const WEEKS: Record<string, WeekData> = { '1': week01 as unknown as WeekData, '2': week02 as unknown as WeekData };
 
 export function generateStaticParams() {
   return Object.keys(WEEKS).map((weekNumber) => ({ weekNumber }));
@@ -34,9 +35,9 @@ export default async function WeekPage({ params }: { params: Promise<{ weekNumbe
   const toc = [
     ...chapters.map((c, i) => ({ id: c.tab!, label: c.number === 0 ? '導言 · 學習目標' : c.title, color: C[i % C.length] })),
     { id: 'readings', label: '本週閱讀', color: C[n % C.length] },
-    { id: 'exercises', label: '閱讀問題與練習', color: C[(n + 1) % C.length] },
+    ...(w.exercises?.length ? [{ id: 'exercises', label: '閱讀問題與練習', color: C[(n + 1) % C.length] }] : []),
     { id: 'seminar', label: '課堂討論', color: C[(n + 2) % C.length] },
-    { id: 'homework', label: '小作業', color: C[(n + 3) % C.length] },
+    ...(w.homework.length ? [{ id: 'homework', label: '小作業', color: C[(n + 3) % C.length] }] : []),
   ];
   const num = (i: number) => String(i).padStart(2, '0');
 
@@ -100,11 +101,13 @@ export default async function WeekPage({ params }: { params: Promise<{ weekNumbe
             <AnswerBox items={w.discussionQuestions.map((q) => ({ ...q, question: q.question.replace('(選擇一題深入回答即可)', '') }))} weekNumber={w.weekNumber} itemType="discussion" color={toc[n + 2].color} />
           </div>
 
+          {w.homework.length > 0 && (<>
           <div className="tabhead" id="homework"><span className="tab" style={{ ['--c' as string]: toc[n + 3].color }}>{num(n + 3)} · HOMEWORK</span></div>
           <div className="section-card">
             <h2>小作業</h2>
             <AnswerBox items={w.homework} weekNumber={w.weekNumber} itemType="homework" color={toc[n + 3].color} />
           </div>
+          </>)}
 
           {w.nextWeekPreview && (
             <div className="section-card" style={{ marginTop: 28, background: 'var(--yellow)' }}>
