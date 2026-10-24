@@ -1,176 +1,119 @@
-import { promises as fs } from 'fs';
-import path from 'path';
+import week01 from '@/content/weeks/week-01.json';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import HighlightableText from '@/components/HighlightableText';
+import Lesson, { type LessonChapter, type Figure } from '@/components/Lesson';
 import ReadingChecklist from '@/components/ReadingChecklist';
 import AnswerBox from '@/components/AnswerBox';
 
-interface Chapter {
-  number: number;
-  title: string;
-  content: string;
-}
-
-interface Reading {
-  id: string;
-  title: string;
-  url: string | null;
-  source: string;
-  description: string;
-  estimatedTime: string;
-}
-
-interface DiscussionQuestion {
-  id: string;
-  question: string;
-}
-
-interface Homework {
-  id: string;
-  task: string;
-}
-
+interface Reading { id: string; title: string; url: string | null; source: string; description: string; estimatedTime: string; required?: boolean }
 interface WeekData {
-  weekNumber: number;
-  title: string;
-  subtitle: string;
-  period: string;
-  introduction: string;
-  learningGoals: string[];
-  chapters: Chapter[];
-  readings: Reading[];
-  discussionQuestions: DiscussionQuestion[];
-  homework: Homework[];
-  exercises?: { id: string; question: string }[];
-  nextWeekPreview: string;
+  weekNumber: number; title: string; subtitle: string; period: string; introduction: string; learningGoals: string[];
+  chapters: { number: number; title: string; content: string; figures?: Figure[] }[];
+  readings: Reading[]; exercises?: { id: string; question: string }[];
+  discussionQuestions: { id: string; question: string }[]; homework: { id: string; task: string }[]; nextWeekPreview: string;
 }
 
-async function getWeekData(weekNumber: string): Promise<WeekData | null> {
-  try {
-    const filePath = path.join(
-      process.cwd(),
-      'content',
-      'weeks',
-      `week-${weekNumber.padStart(2, '0')}.json`
-    );
-    const fileContents = await fs.readFile(filePath, 'utf8');
-    return JSON.parse(fileContents);
-  } catch {
-    return null;
-  }
+const C = ['var(--t1)', 'var(--t2)', 'var(--t3)', 'var(--t4)', 'var(--t5)', 'var(--t6)', 'var(--t7)', 'var(--t8)', 'var(--yellow)'];
+
+const WEEKS: Record<string, WeekData> = { '1': week01 as unknown as WeekData };
+
+export function generateStaticParams() {
+  return Object.keys(WEEKS).map((weekNumber) => ({ weekNumber }));
 }
 
-export default async function WeekPage({
-  params,
-}: {
-  params: Promise<{ weekNumber: string }>;
-}) {
+export default async function WeekPage({ params }: { params: Promise<{ weekNumber: string }> }) {
   const { weekNumber } = await params;
-  const weekData = await getWeekData(weekNumber);
+  const w = WEEKS[String(Number(weekNumber))];
+  if (!w) notFound();
 
-  if (!weekData) {
-    notFound();
-  }
+  const chapters: LessonChapter[] = [
+    { number: 0, title: '導言', content: w.introduction, tab: 'intro', color: C[0] },
+    ...w.chapters.map((c, i) => ({ ...c, tab: `ch-${c.number}`, color: C[(i + 1) % C.length] })),
+  ];
+  const n = chapters.length;
+  const toc = [
+    ...chapters.map((c, i) => ({ id: c.tab!, label: c.number === 0 ? '導言 · 學習目標' : c.title, color: C[i % C.length] })),
+    { id: 'readings', label: '本週閱讀', color: C[n % C.length] },
+    { id: 'exercises', label: '閱讀問題與練習', color: C[(n + 1) % C.length] },
+    { id: 'seminar', label: '課堂討論', color: C[(n + 2) % C.length] },
+    { id: 'homework', label: '小作業', color: C[(n + 3) % C.length] },
+  ];
+  const num = (i: number) => String(i).padStart(2, '0');
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
-      <nav className="mb-8">
-        <Link href="/" className="text-sm text-blue-600 hover:underline">
-          ← 返回課程總覽
-        </Link>
-      </nav>
-
-      <header className="mb-12 pb-8 border-b border-gray-200">
-        <div className="text-sm text-gray-600 mb-2">
-          Week {weekData.weekNumber} · {weekData.period}
-        </div>
-        <h1 className="text-3xl md:text-4xl font-bold mb-3">{weekData.title}</h1>
-        <p className="text-lg text-gray-600">{weekData.subtitle}</p>
-      </header>
-
-      <section className="mb-12">
-        <HighlightableText
-          content={weekData.introduction}
-          weekNumber={weekData.weekNumber}
-        />
-      </section>
-
-      <section className="mb-12 bg-gray-50 rounded-lg p-6">
-        <h2 className="text-xl font-semibold mb-4">學習目標</h2>
-        <ul className="space-y-2">
-          {weekData.learningGoals.map((goal, index) => (
-            <li key={index} className="flex gap-3">
-              <span className="text-blue-600 font-medium">{index + 1}.</span>
-              <span>{goal}</span>
-            </li>
+    <div className="wrap">
+      <div className="week-grid">
+        <aside className="toc" aria-label="章節">
+          {toc.map((t, i) => (
+            <a key={t.id} href={`#${t.id}`} style={{ ['--c' as string]: t.color }}>
+              <span>{num(i)}</span><span>{t.label}</span>
+            </a>
           ))}
-        </ul>
-      </section>
+          <Link href="/notebook" className="btn" style={{ marginTop: 8, justifyContent: 'center' }}>我的筆記 →</Link>
+        </aside>
 
-      <section className="mb-12">
-        <h2 className="text-2xl font-semibold mb-8">本週課程</h2>
-        <div className="space-y-12">
-          {weekData.chapters.map((chapter) => (
-            <div key={chapter.number}>
-              <h3 className="text-xl font-semibold mb-4">
-                {chapter.number}. {chapter.title}
-              </h3>
-              <HighlightableText
-                content={chapter.content}
-                weekNumber={weekData.weekNumber}
-                chapterNumber={chapter.number}
-              />
+        <div>
+          <div className="page" style={{ borderBottom: 0 }}>
+            <div className="cover-head">
+              <div className="meta">
+                <span className="chip on">WEEK {num(w.weekNumber)}</span>
+                <span className="chip">{w.period}</span>
+                <span className="chip">≤ 120 MIN</span>
+              </div>
+              <h1>{w.title}</h1>
+              <div className="mono small muted">{w.subtitle}</div>
+              <p className="hand small" style={{ margin: '14px 0 0', color: 'var(--ink-2)' }}>
+                ✎ 選取任何文字即可劃線或在頁邊寫筆記。
+              </p>
             </div>
-          ))}
+          </div>
+          <div className="page">
+            <Lesson weekNumber={w.weekNumber} chapters={chapters} />
+          </div>
+
+          <div className="tabhead" style={{ marginTop: 28 }}><span className="tab" style={{ ['--c' as string]: C[0] }}>{num(0)} · 學習目標</span></div>
+          <div className="section-card">
+            <ol className="goals">{w.learningGoals.map((g, i) => <li key={i}>{g}</li>)}</ol>
+          </div>
+
+          <div className="tabhead" id="readings"><span className="tab" style={{ ['--c' as string]: toc[n].color }}>{num(n)} · READINGS</span></div>
+          <div className="section-card">
+            <h2>本週閱讀</h2>
+            <ReadingChecklist readings={w.readings} weekNumber={w.weekNumber} />
+          </div>
+
+          {w.exercises && w.exercises.length > 0 && (
+            <>
+              <div className="tabhead" id="exercises"><span className="tab" style={{ ['--c' as string]: toc[n + 1].color }}>{num(n + 1)} · WORKSHEET</span></div>
+              <div className="section-card">
+                <h2>閱讀問題與練習</h2>
+                <p className="muted small" style={{ marginTop: 0 }}>每題都可以直接寫在橫線上,也可以上傳照片或檔案。自動儲存。</p>
+                <AnswerBox items={w.exercises} weekNumber={w.weekNumber} itemType="exercise" color={toc[n + 1].color} />
+              </div>
+            </>
+          )}
+
+          <div className="tabhead" id="seminar"><span className="tab" style={{ ['--c' as string]: toc[n + 2].color }}>{num(n + 2)} · SEMINAR</span></div>
+          <div className="section-card">
+            <h2>課堂討論</h2>
+            <p className="muted small" style={{ marginTop: 0 }}>選擇一題深入回答即可。</p>
+            <AnswerBox items={w.discussionQuestions.map((q) => ({ ...q, question: q.question.replace('(選擇一題深入回答即可)', '') }))} weekNumber={w.weekNumber} itemType="discussion" color={toc[n + 2].color} />
+          </div>
+
+          <div className="tabhead" id="homework"><span className="tab" style={{ ['--c' as string]: toc[n + 3].color }}>{num(n + 3)} · HOMEWORK</span></div>
+          <div className="section-card">
+            <h2>小作業</h2>
+            <AnswerBox items={w.homework} weekNumber={w.weekNumber} itemType="homework" color={toc[n + 3].color} />
+          </div>
+
+          {w.nextWeekPreview && (
+            <div className="section-card" style={{ marginTop: 28, background: 'var(--yellow)' }}>
+              <div className="kicker" style={{ color: 'var(--ink)' }}>NEXT WEEK →</div>
+              <p style={{ margin: '6px 0 0' }}>{w.nextWeekPreview}</p>
+            </div>
+          )}
         </div>
-      </section>
-
-      <section className="mb-12">
-        <h2 className="text-2xl font-semibold mb-6">延伸閱讀清單</h2>
-        <ReadingChecklist readings={weekData.readings} weekNumber={weekData.weekNumber} />
-      </section>
-
-      {weekData.exercises && weekData.exercises.length > 0 && (
-        <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-2">閱讀問題與練習</h2>
-          <p className="text-sm text-gray-600 mb-6">每題都可以寫下回答並上傳檔案。</p>
-          <AnswerBox
-            items={weekData.exercises}
-            weekNumber={weekData.weekNumber}
-            itemType="exercise"
-          />
-        </section>
-      )}
-
-      {weekData.discussionQuestions && weekData.discussionQuestions.length > 0 && (
-        <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-6">研討問題</h2>
-          <AnswerBox
-            items={weekData.discussionQuestions}
-            weekNumber={weekData.weekNumber}
-            itemType="discussion"
-          />
-        </section>
-      )}
-
-      {weekData.homework && weekData.homework.length > 0 && (
-        <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-6">本週作業</h2>
-          <AnswerBox
-            items={weekData.homework}
-            weekNumber={weekData.weekNumber}
-            itemType="homework"
-          />
-        </section>
-      )}
-
-      {weekData.nextWeekPreview && (
-        <section className="mt-16 p-6 bg-gray-50 rounded-lg">
-          <h3 className="text-lg font-semibold mb-3">下週預告</h3>
-          <p className="text-gray-600">{weekData.nextWeekPreview}</p>
-        </section>
-      )}
+      </div>
     </div>
   );
 }

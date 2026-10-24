@@ -1,205 +1,101 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
 
-interface Item {
-  id: string;
-  question?: string;
-  task?: string;
-}
-
-interface AnswerBoxProps {
-  items: Item[];
-  weekNumber: number;
-  itemType: 'discussion' | 'homework' | 'exercise';
-}
-
+interface Item { id: string; question?: string; task?: string }
+type ItemType = 'discussion' | 'homework' | 'exercise';
 interface Answer {
-  id: string;
-  weekNumber: number;
-  itemId: string;
-  itemType: 'discussion' | 'homework' | 'exercise';
-  text: string;
-  uploads?: string[];
-  createdAt: number;
-  updatedAt: number;
+  id: string; weekNumber: number; itemId: string; itemType: ItemType; text: string;
+  uploads?: string[]; createdAt: number; updatedAt: number;
 }
 
-export default function AnswerBox({ items, weekNumber, itemType }: AnswerBoxProps) {
+const LABEL: Record<ItemType, string> = { exercise: 'Q', discussion: 'S', homework: 'HW' };
+
+function fileName(url: string) {
+  try { return decodeURIComponent(url.split('/').pop() || '附件').replace(/^\d+-/, ''); } catch { return '附件'; }
+}
+
+export default function AnswerBox({ items, weekNumber, itemType, color }: { items: Item[]; weekNumber: number; itemType: ItemType; color?: string }) {
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
-  const [uploading, setUploading] = useState<Record<string, boolean>>({});
+  const [status, setStatus] = useState<Record<string, string>>({});
+  const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const latest = useRef<Record<string, Answer>>({});
 
   useEffect(() => {
-    fetchAnswers();
+    fetch('/api/answers').then((r) => (r.ok ? r.json() : [])).then((data: Answer[]) => {
+      const map: Record<string, Answer> = {};
+      data.filter((a) => a.weekNumber === weekNumber && a.itemType === itemType).forEach((a) => { map[a.itemId] = a; });
+      latest.current = map;
+      setAnswers(map);
+    }).catch(() => {});
   }, [weekNumber, itemType]);
 
-  const fetchAnswers = async () => {
-    try {
-      const response = await fetch('/api/answers');
-      if (response.ok) {
-        const data: Answer[] = await response.json();
-        const answersMap: Record<string, Answer> = {};
-        data
-          .filter((a) => a.weekNumber === weekNumber && a.itemType === itemType)
-          .forEach((a) => {
-            answersMap[a.itemId] = a;
-          });
-        setAnswers(answersMap);
-      }
-    } catch (error) {
-      console.error('Failed to fetch answers:', error);
-    }
+  const persist = async (answer: Answer) => {
+    setStatus((s) => ({ ...s, [answer.itemId]: '儲存中…' }));
+    const r = await fetch('/api/answers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'save', answer }) }).catch(() => null);
+    setStatus((s) => ({ ...s, [answer.itemId]: r && r.ok ? '已儲存 ✓' : '儲存失敗' }));
   };
 
-  const saveAnswer = async (itemId: string, text: string) => {
-    const existingAnswer = answers[itemId];
+  const update = (itemId: string, patch: Partial<Answer>, immediate = false) => {
+    const prev = latest.current[itemId];
     const answer: Answer = {
-      id: existingAnswer?.id || nanoid(),
-      weekNumber,
-      itemId,
-      itemType,
-      text,
-      uploads: existingAnswer?.uploads || [],
-      createdAt: existingAnswer?.createdAt || Date.now(),
-      updatedAt: Date.now(),
+      id: prev?.id || nanoid(), weekNumber, itemId, itemType, text: prev?.text || '', uploads: prev?.uploads || [],
+      createdAt: prev?.createdAt || Date.now(), ...patch, updatedAt: Date.now(),
     };
-
-    setAnswers({ ...answers, [itemId]: answer });
-
-    try {
-      await fetch('/api/answers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'save', answer }),
-      });
-    } catch (error) {
-      console.error('Failed to save answer:', error);
-    }
+    latest.current = { ...latest.current, [itemId]: answer };
+    setAnswers(latest.current);
+    clearTimeout(timers.current[itemId]);
+    if (immediate) persist(answer);
+    else { setStatus((s) => ({ ...s, [itemId]: '…' })); timers.current[itemId] = setTimeout(() => persist(latest.current[itemId]), 800); }
   };
 
-  const handleFileUpload = async (itemId: string, file: File) => {
-    setUploading({ ...uploading, [itemId]: true });
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('weekNumber', weekNumber.toString());
-      formData.append('itemId', itemId);
-
-      const response = await fetch('/api/uploads', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const { url } = await response.json();
-        const existingAnswer = answers[itemId];
-        const answer: Answer = {
-          id: existingAnswer?.id || nanoid(),
-          weekNumber,
-          itemId,
-          itemType,
-          text: existingAnswer?.text || '',
-          uploads: [...(existingAnswer?.uploads || []), url],
-          createdAt: existingAnswer?.createdAt || Date.now(),
-          updatedAt: Date.now(),
-        };
-
-        setAnswers({ ...answers, [itemId]: answer });
-
-        await fetch('/api/answers', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'save', answer }),
-        });
-      } else {
-        const error = await response.json();
-        alert(error.error || '上傳失敗');
-      }
-    } catch (error) {
-      console.error('Failed to upload file:', error);
-      alert('上傳失敗,請稍後再試');
-    } finally {
-      setUploading({ ...uploading, [itemId]: false });
+  const upload = async (itemId: string, file: File) => {
+    setStatus((s) => ({ ...s, [itemId]: '上傳中…' }));
+    const fd = new FormData();
+    fd.append('file', file); fd.append('weekNumber', String(weekNumber)); fd.append('itemId', itemId);
+    const r = await fetch('/api/uploads', { method: 'POST', body: fd }).catch(() => null);
+    if (r && r.ok) {
+      const { url } = await r.json();
+      update(itemId, { uploads: [...(latest.current[itemId]?.uploads || []), url] }, true);
+    } else {
+      setStatus((s) => ({ ...s, [itemId]: '上傳失敗' }));
     }
   };
 
   return (
-    <div className="space-y-6">
-      {items.map((item, index) => (
-        <div key={item.id} className="border border-gray-200 rounded-lg p-6 bg-white">
-          <h4 className="font-medium mb-3">
-            {index + 1}. {item.question || item.task}
-          </h4>
-
-          <textarea
-            value={answers[item.id]?.text || ''}
-            onChange={(e) => saveAnswer(item.id, e.target.value)}
-            placeholder="在此寫下你的回答..."
-            className="w-full h-32 p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm mb-3"
-          />
-
-          <div className="flex items-center gap-4">
-            <label className="cursor-pointer">
-              <input
-                type="file"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    handleFileUpload(item.id, file);
-                  }
-                }}
-                className="hidden"
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                disabled={uploading[item.id]}
-              />
-              <span className="text-sm text-blue-600 hover:underline">
-                {uploading[item.id] ? '上傳中...' : '附加檔案'}
-              </span>
-            </label>
-
-            {answers[item.id]?.uploads && answers[item.id].uploads!.length > 0 && (
-              <div className="text-sm text-gray-600">
-                已附加 {answers[item.id].uploads!.length} 個檔案
-              </div>
-            )}
-          </div>
-
-          {answers[item.id]?.uploads && answers[item.id].uploads!.length > 0 && (
-            <div className="mt-3 space-y-2">
-              {answers[item.id].uploads!.map((url, idx) => (
-                <div
-                  key={idx}
-                  className="text-sm flex items-center gap-2 text-gray-600"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                    />
-                  </svg>
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:underline"
-                  >
-                    附件 {idx + 1}
-                  </a>
-                </div>
-              ))}
+    <div>
+      {items.map((item, i) => {
+        const a = answers[item.id];
+        return (
+          <div className="qcard" key={item.id} style={{ ['--c' as string]: color }}>
+            <div className="qhead">
+              <div className="qnum">{LABEL[itemType]}{String(i + 1).padStart(2, '0')}</div>
+              <div className="qtext">{item.question || item.task}</div>
             </div>
-          )}
-        </div>
-      ))}
+            <textarea
+              className="ruled"
+              value={a?.text || ''}
+              onChange={(e) => update(item.id, { text: e.target.value })}
+              placeholder="寫在這一頁…"
+              aria-label={`回答 ${item.question || item.task}`}
+            />
+            <div className="qfoot">
+              <label className="btn" style={{ padding: '3px 10px' }}>
+                <input type="file" hidden accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.heic,.txt,.md"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(item.id, f); e.target.value = ''; }} />
+                ⇪ 上傳檔案
+              </label>
+              <div className="files">
+                {(a?.uploads || []).map((u, k) => (
+                  <a key={k} className="chip" href={u} target="_blank" rel="noopener noreferrer">📎 {fileName(u)}</a>
+                ))}
+              </div>
+              <span className="status">{status[item.id] || (a?.updatedAt ? `上次儲存 ${new Date(a.updatedAt).toLocaleDateString('zh-TW')}` : '')}</span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

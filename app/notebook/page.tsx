@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import week1 from '@/content/weeks/week-01.json';
 
 interface Highlight {
   id: string;
@@ -132,142 +133,86 @@ export default function NotebookPage() {
     URL.revokeObjectURL(url);
   };
 
-  if (loading) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="text-center text-gray-600">載入中...</div>
-      </div>
-    );
-  }
+  const COLOR: Record<string, string> = { yellow: '#f5d84a', blue: '#6cc0ff', green: '#a9cc4b', orange: '#ffab3d' };
+  const TYPE: Record<string, string> = { exercise: '閱讀問題與練習', discussion: '課堂討論', homework: '小作業' };
+  const questionFor = (w: number, id: string) => {
+    if (w !== 1) return id;
+    const all = [...(week1.exercises || []), ...week1.discussionQuestions, ...week1.homework.map((h) => ({ id: h.id, question: h.task }))];
+    return all.find((q) => q.id === id)?.question || id;
+  };
+  const readingTitle = (w: number, id: string) => (w === 1 ? week1.readings.find((r) => r.id === id)?.title : undefined) || id;
 
-  const totalItems = highlights.length + readingNotes.length + answers.length;
+  const weeks = Array.from(new Set([...highlights, ...readingNotes, ...answers].map((x) => x.weekNumber))).sort((a, b) => a - b);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
-      <header className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">我的筆記本</h1>
-          <p className="text-gray-600">
-            共 {totalItems} 筆記錄：{highlights.length} 個劃線、{readingNotes.length} 則閱讀筆記、
-            {answers.length} 個回答
-          </p>
+    <div className="wrap" style={{ maxWidth: 980 }}>
+      <div className="folder">
+        <div className="tabs"><span style={{ background: 'var(--t6)' }}>MY NOTES</span></div>
+        <div className="body page" style={{ padding: '30px 36px' }}>
+          <div className="rule" />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+            <div>
+              <div className="en" style={{ fontSize: 13 }}>Notebook — everything you wrote</div>
+              <h1 style={{ fontSize: 30, margin: '8px 0 0' }}>我的筆記本</h1>
+            </div>
+            <button onClick={exportAsMarkdown} className="btn">⇩ 匯出 Markdown</button>
+          </div>
         </div>
-        <button
-          onClick={exportAsMarkdown}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:opacity-90 text-sm"
-          disabled={totalItems === 0}
-        >
-          匯出 Markdown
-        </button>
-      </header>
+      </div>
 
-      {totalItems === 0 ? (
-        <div className="text-center py-12 text-gray-600">
-          <p className="mb-4">還沒有任何筆記</p>
-          <Link href="/" className="text-blue-600 hover:underline">
-            開始學習 →
-          </Link>
-        </div>
-      ) : (
-        <div className="space-y-12">
-          {Array.from(
-            new Set([
-              ...highlights.map((h) => h.weekNumber),
-              ...readingNotes.map((n) => n.weekNumber),
-              ...answers.map((a) => a.weekNumber),
-            ])
-          )
-            .sort((a, b) => a - b)
-            .map((weekNumber) => (
-              <section key={weekNumber} className="border-l-4 border-blue-600 pl-6">
-                <h2 className="text-2xl font-semibold mb-6">
-                  <Link href={`/week/${weekNumber}`} className="hover:underline">
-                    Week {weekNumber}
-                  </Link>
-                </h2>
-
-                {highlights.filter((h) => h.weekNumber === weekNumber).length > 0 && (
-                  <div className="mb-8">
-                    <h3 className="text-lg font-medium mb-4">劃線與筆記</h3>
-                    <div className="space-y-3">
-                      {highlights
-                        .filter((h) => h.weekNumber === weekNumber)
-                        .map((highlight) => (
-                          <div
-                            key={highlight.id}
-                            className="p-4 rounded-lg bg-gray-50 border border-gray-200"
-                          >
-                            <p className="text-sm mb-2 italic">&ldquo;{highlight.text}&rdquo;</p>
-                            {highlight.note && (
-                              <p className="text-sm text-gray-600">{highlight.note}</p>
-                            )}
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
-
-                {readingNotes.filter((n) => n.weekNumber === weekNumber).length > 0 && (
-                  <div className="mb-8">
-                    <h3 className="text-lg font-medium mb-4">閱讀筆記</h3>
-                    <div className="space-y-3">
-                      {readingNotes
-                        .filter((n) => n.weekNumber === weekNumber)
-                        .map((note) => (
-                          <div
-                            key={note.id}
-                            className="p-4 rounded-lg bg-gray-50 border border-gray-200"
-                          >
-                            <p className="text-sm">{note.note}</p>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
-
-                {answers.filter((a) => a.weekNumber === weekNumber).length > 0 && (
-                  <div className="mb-8">
-                    <h3 className="text-lg font-medium mb-4">討論與作業</h3>
-                    <div className="space-y-4">
-                      {answers
-                        .filter((a) => a.weekNumber === weekNumber)
-                        .map((answer) => (
-                          <div
-                            key={answer.id}
-                            className="p-4 rounded-lg bg-gray-50 border border-gray-200"
-                          >
-                            <div className="text-xs text-gray-600 mb-2">
-                              {answer.itemType === 'discussion' ? '討論問題' : answer.itemType === 'exercise' ? '閱讀與練習' : '作業'}
-                            </div>
-                            <p className="text-sm whitespace-pre-wrap">{answer.text}</p>
-                            {answer.uploads && answer.uploads.length > 0 && (
-                              <div className="mt-3 pt-3 border-t border-gray-200">
-                                <div className="text-xs text-gray-600 mb-2">附件：</div>
-                                <div className="space-y-1">
-                                  {answer.uploads.map((url, idx) => (
-                                    <div key={idx}>
-                                      <a
-                                        href={url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-sm text-blue-600 hover:underline"
-                                      >
-                                        附件 {idx + 1}
-                                      </a>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
-              </section>
-            ))}
+      {loading && <p className="mono small muted" style={{ marginTop: 24 }}>LOADING…</p>}
+      {!loading && weeks.length === 0 && (
+        <div className="section-card" style={{ marginTop: 24 }}>
+          <p style={{ margin: 0 }}>還沒有任何筆記。到 <Link href="/week/1">Week 01</Link> 選取文字開始劃線吧。</p>
         </div>
       )}
+
+      {weeks.map((w) => {
+        const hs = highlights.filter((h) => h.weekNumber === w);
+        const ns = readingNotes.filter((n) => n.weekNumber === w && n.note);
+        const as = answers.filter((a) => a.weekNumber === w && (a.text || a.uploads?.length));
+        return (
+          <div key={w}>
+            <div className="tabhead"><span className="tab" style={{ ['--c' as string]: 'var(--yellow)' }}>WEEK {String(w).padStart(2, '0')}</span></div>
+            <div className="section-card">
+              <Link href={`/week/${w}`} className="mono small">打開 Week {String(w).padStart(2, '0')} →</Link>
+              {hs.length > 0 && (<>
+                <h3 className="kicker" style={{ marginTop: 18 }}>劃線與頁邊筆記 · {hs.length}</h3>
+                {hs.map((h) => (
+                  <div className="nb-item" key={h.id}>
+                    <div className="nb-quote" style={{ ['--c' as string]: COLOR[h.color] || COLOR.yellow }}>{h.text}</div>
+                    {h.note && <div className="hand" style={{ marginTop: 6, paddingLeft: 16 }}>✎ {h.note}</div>}
+                  </div>
+                ))}
+              </>)}
+              {ns.length > 0 && (<>
+                <h3 className="kicker" style={{ marginTop: 22 }}>閱讀筆記 · {ns.length}</h3>
+                {ns.map((n) => (
+                  <div className="nb-item" key={n.id}>
+                    <div className="mono small muted">{readingTitle(w, n.readingId)}</div>
+                    <div className="hand" style={{ whiteSpace: 'pre-wrap' }}>{n.note}</div>
+                  </div>
+                ))}
+              </>)}
+              {as.length > 0 && (<>
+                <h3 className="kicker" style={{ marginTop: 22 }}>回答 · {as.length}</h3>
+                {as.map((a) => (
+                  <div className="nb-item" key={a.id}>
+                    <div className="mono small muted">{TYPE[a.itemType]}</div>
+                    <div style={{ fontWeight: 700, fontSize: 15 }}>{questionFor(w, a.itemId)}</div>
+                    <div className="hand" style={{ whiteSpace: 'pre-wrap', marginTop: 4 }}>{a.text}</div>
+                    {a.uploads && a.uploads.length > 0 && (
+                      <div className="files" style={{ marginTop: 6 }}>
+                        {a.uploads.map((u, k) => <a key={k} className="chip" href={u} target="_blank" rel="noopener noreferrer">📎 附件 {k + 1}</a>)}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </>)}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

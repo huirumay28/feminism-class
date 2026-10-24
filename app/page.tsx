@@ -1,125 +1,62 @@
 import Link from 'next/link';
-import { promises as fs } from 'fs';
-import path from 'path';
+import curriculum from '@/content/curriculum.json';
 
-interface WeekTopic {
-  week: number;
-  title: string;
-  status: 'available' | 'upcoming';
-}
+interface WeekTopic { week: number; title: string; status: 'available' | 'upcoming' }
+interface Module { moduleNumber: number; title: string; weeks: string; description: string; learningGoal: string; weekTopics: WeekTopic[] }
+interface Curriculum { title: string; subtitle: string; duration: string; description: string; modules: Module[] }
 
-interface Module {
-  moduleNumber: number;
-  title: string;
-  weeks: string;
-  description: string;
-  learningGoal: string;
-  weekTopics: WeekTopic[];
-}
+const TABS = ['var(--t1)', 'var(--t2)', 'var(--t3)', 'var(--t4)', 'var(--t5)', 'var(--t6)'];
 
-interface Curriculum {
-  title: string;
-  subtitle: string;
-  duration: string;
-  description: string;
-  modules: Module[];
-}
 
-async function getCurriculum(): Promise<Curriculum> {
-  const filePath = path.join(process.cwd(), 'content', 'curriculum.json');
-  const fileContents = await fs.readFile(filePath, 'utf8');
-  return JSON.parse(fileContents);
-}
-
-export default async function Home() {
-  const curriculum = await getCurriculum();
-
+export default function Home() {
+  const c = curriculum as unknown as Curriculum;
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
-      <header className="mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">{curriculum.title}</h1>
-        <p className="text-xl text-gray-600 mb-2">{curriculum.subtitle}</p>
-        <p className="text-lg text-gray-600 mb-6">{curriculum.duration}</p>
-        <p className="text-lg leading-relaxed">{curriculum.description}</p>
-      </header>
-
-      <div className="space-y-12">
-        {curriculum.modules.map((module) => (
-          <section key={module.moduleNumber} className="border-l-4 border-blue-600 pl-6">
-            <div className="mb-6">
-              <div className="text-sm text-gray-600 mb-2">
-                第 {module.moduleNumber} 個月 · {module.weeks}
+    <div className="wrap">
+      <div className="folder">
+        <div className="tabs">
+          {c.modules.map((m, i) => (
+            <span key={m.moduleNumber} style={{ background: TABS[i % 6] }}>{String(m.moduleNumber).padStart(2, '0')}</span>
+          ))}
+        </div>
+        <div className="body page">
+          <div className="rule" />
+          <div className="en">Taiwan Feminism &amp; Social Good:<br />A Study Notebook<br />—<br />Section 01 · History</div>
+          <h1 style={{ marginTop: 22 }}>{c.title}</h1>
+          <p style={{ margin: 0, maxWidth: 640 }}>{c.description}</p>
+          <p className="mono small muted" style={{ marginTop: 10 }}>{c.duration} · 每週閱讀 ≤ 2 小時</p>
+          <div style={{ marginTop: 18, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <Link href="/week/1" className="btn primary">開始 Week 01 →</Link>
+            <Link href="/notebook" className="btn">我的筆記</Link>
+          </div>
+          <div className="months">
+            {c.modules.map((m, i) => (
+              <div className="month" key={m.moduleNumber}>
+                <span className="n" style={{ ['--c' as string]: TABS[i % 6] }}>MONTH {String(m.moduleNumber).padStart(2, '0')} · {m.weeks.replace('Weeks', 'WK')}</span>
+                <h3>{m.title}</h3>
+                <p>{m.learningGoal}</p>
               </div>
-              <h2 className="text-2xl font-semibold mb-3">{module.title}</h2>
-              <p className="text-gray-600 mb-2">{module.description}</p>
-              <p className="text-sm">
-                <span className="font-medium">學習目標：</span>
-                {module.learningGoal}
-              </p>
-            </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-            <div className="space-y-3">
-              {module.weekTopics.map((topic) => {
-                const isAvailable = topic.status === 'available';
-                return (
-                  <div
-                    key={topic.week}
-                    className={`p-4 rounded-lg border ${
-                      isAvailable
-                        ? 'bg-white border-blue-600 shadow-sm'
-                        : 'bg-gray-50 border-gray-200'
-                    }`}
-                  >
-                    {isAvailable ? (
-                      <Link
-                        href={`/week/${topic.week}`}
-                        className="block no-underline hover:no-underline"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="text-sm font-medium text-blue-600">
-                              Week {topic.week}
-                            </span>
-                            <h3 className="text-lg font-medium text-gray-900 mt-1">
-                              {topic.title}
-                            </h3>
-                          </div>
-                          <svg
-                            className="w-5 h-5 text-blue-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </div>
-                      </Link>
-                    ) : (
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-sm font-medium text-gray-600">
-                            Week {topic.week}
-                          </span>
-                          <h3 className="text-lg font-medium text-gray-600 mt-1">
-                            {topic.title}
-                          </h3>
-                        </div>
-                        <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded">
-                          即將推出
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        ))}
+      <div className="tabhead"><span className="tab" style={{ ['--c' as string]: 'var(--yellow)' }}>CONTENTS · 目錄</span></div>
+      <div className="section-card">
+        <table className="contents">
+          <thead><tr><th>Week</th><th>主題</th><th>Month</th><th>Status</th></tr></thead>
+          <tbody>
+            {c.modules.flatMap((m) =>
+              m.weekTopics.map((w) => (
+                <tr key={w.week} className={w.status === 'available' ? 'avail' : ''}>
+                  <td className="w">{String(w.week).padStart(2, '0')}</td>
+                  <td>{w.status === 'available' ? <Link href={`/week/${w.week}`}>{w.title}</Link> : <span className="muted">{w.title}</span>}</td>
+                  <td className="w">{String(m.moduleNumber).padStart(2, '0')}</td>
+                  <td>{w.status === 'available' ? <span className="chip on">OPEN</span> : <span className="chip">SOON</span>}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
