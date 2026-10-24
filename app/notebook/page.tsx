@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import week1 from '@/content/weeks/week-01.json';
 import week2 from '@/content/weeks/week-02.json';
+import appendixData from '@/content/appendix.json';
+
+const APPENDIX = appendixData.entries as { id: string; week: number; chapter: number; question: string; askedOn?: string }[];
 
 const WEEKS: Record<number, { readings: { id: string; title: string }[]; exercises?: { id: string; question: string }[]; discussionQuestions: { id: string; question: string }[]; homework: { id: string; task: string }[] }> = { 1: week1, 2: week2 };
 
@@ -146,7 +149,7 @@ export default function NotebookPage() {
   };
   const readingTitle = (w: number, id: string) => WEEKS[w]?.readings.find((r) => r.id === id)?.title || id;
 
-  const weeks = Array.from(new Set([...highlights, ...readingNotes, ...answers].map((x) => x.weekNumber))).sort((a, b) => a - b);
+  const weeks = Array.from(new Set([...highlights, ...readingNotes, ...answers].map((x) => x.weekNumber).concat(APPENDIX.map((e) => e.week)))).sort((a, b) => a - b);
 
   return (
     <div className="wrap" style={{ maxWidth: 980 }}>
@@ -175,11 +178,22 @@ export default function NotebookPage() {
         const hs = highlights.filter((h) => h.weekNumber === w);
         const ns = readingNotes.filter((n) => n.weekNumber === w && n.note);
         const as = answers.filter((a) => a.weekNumber === w && (a.text || a.uploads?.length));
+        const ap = APPENDIX.filter((e) => e.week === w);
+        const chTitle = (n: number) => ((w === 1 ? week1 : week2) as { chapters: { number: number; title: string }[] }).chapters.find((c) => c.number === n)?.title ?? '';
         return (
           <div key={w}>
             <div className="tabhead"><span className="tab" style={{ ['--c' as string]: 'var(--yellow)' }}>WEEK {String(w).padStart(2, '0')}</span></div>
             <div className="section-card">
               <Link href={`/week/${w}`} className="mono small">打開 Week {String(w).padStart(2, '0')} →</Link>
+              {ap.length > 0 && (<>
+                <h3 className="kicker" style={{ marginTop: 18 }}>延伸問題 · 我的提問 · {ap.length}</h3>
+                {ap.map((e) => (
+                  <div className="nb-item" key={e.id}>
+                    <div className="mono small muted">CH. {String(e.chapter).padStart(2, '0')} · {chTitle(e.chapter)}</div>
+                    <Link href={`/week/${w}#app-${e.id}`} className="hand" style={{ fontSize: 17 }}>？ {e.question} →</Link>
+                  </div>
+                ))}
+              </>)}
               {hs.length > 0 && (<>
                 <h3 className="kicker" style={{ marginTop: 18 }}>劃線與頁邊筆記 · {hs.length}</h3>
                 {hs.map((h) => (

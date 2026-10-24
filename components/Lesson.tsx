@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
+import { parseContentBlock, Chart, Icon, type ContentBlock, type ParsedBlock, type U } from './Blocks';
 
 export interface Figure { src: string; caption: string; credit: string; creditUrl: string }
-export interface LessonChapter { number: number; title: string; content: string; figures?: Figure[]; tab?: string; color?: string }
+export interface LessonChapter { number: number; title: string; content: string; figures?: Figure[]; tab?: string; color?: string; blocks?: ContentBlock[] }
 
 interface Highlight {
   id: string;
@@ -19,16 +20,25 @@ interface Highlight {
   createdAt: number;
 }
 
-type Block = { kind: 'h'; text: string } | { kind: 'p' | 'li'; raw: string; plain: string; unit: number };
+type Block = { kind: 'h'; text: string } | { kind: 'p' | 'li'; raw: string; plain: string; unit: number } | { kind: 'blk'; block: ParsedBlock; units: U[]; def: number }
+  | { kind: 'app'; entry: AppendixEntry; inner: Block[] };
+
+export interface AppendixEntry { id: string; week: number; chapter: number; after: string; question: string; source?: string; askedOn?: string; content: string; blocks?: ContentBlock[]; sources?: { name: string; url: string }[] }
 
 const COLORS = ['yellow', 'blue', 'green', 'orange'] as const;
 
-function parseBlocks(content: string): Block[] {
+function parseBlocks(content: string, defs: ContentBlock[] = [], startUnit = 0): Block[] {
   const out: Block[] = [];
-  let unit = 0;
+  let unit = startUnit;
   for (const block of content.split(/\n{2,}/)) {
     const lines = block.split('\n').map((l) => l.trim()).filter(Boolean);
     if (!lines.length) continue;
+    const ref = lines.length === 1 && lines[0].match(/^\[\[block:(\d+)\]\]$/);
+    if (ref) {
+      const def = defs[Number(ref[1])];
+      if (def) out.push({ kind: 'blk', def: Number(ref[1]), ...parseContentBlock(def, () => unit++) });
+      continue;
+    }
     if (lines.length === 1 && lines[0].startsWith('### ')) {
       out.push({ kind: 'h', text: lines[0].slice(4) });
       continue;
@@ -85,6 +95,79 @@ function renderUnit(raw: string, hls: Highlight[], onOpen: (h: Highlight, el: HT
   return nodes;
 }
 
+function renderBlock(b: ParsedBlock, cell: (x: U, cls?: string) => React.ReactNode): React.ReactNode {
+  switch (b.type) {
+    case 'table':
+      return (
+        <figure className="blk blk-table">
+          {b.caption && <figcaption className="mono small">{b.caption}</figcaption>}
+          <div className="tscroll">
+            <table>
+              <thead><tr>{b.columns.map((h, k) => <th key={k} scope="col">{h}</th>)}</tr></thead>
+              <tbody>
+                {b.rows.map((r, ri) => (
+                  <tr key={ri}>
+                    {r.map((x, ci) => (b.rowHeader && ci === 0
+                      ? <th key={ci} scope="row">{cell(x)}</th>
+                      : <td key={ci} data-label={b.columns[ci] || undefined}>{cell(x)}</td>))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </figure>
+      );
+    case 'cards':
+      return (
+        <div className={`blk blk-cards${b.numbered ? ' numbered' : ''}`} style={{ ['--cols' as string]: b.columns ?? b.items.length }}>
+          {b.items.map((it, k) => (
+            <div className="blk-card" key={k}>
+              <div className="blk-card-head">
+                {it.icon && <Icon name={it.icon} />}
+                {b.numbered && <span className="blk-num mono">{String(k + 1).padStart(2, '0')}</span>}
+                <div>
+                  <div className="blk-card-title">{cell(it.title)}</div>
+                  {it.subtitle && <div className="mono small muted">{it.subtitle}</div>}
+                </div>
+              </div>
+              <p>{cell(it.text)}</p>
+              {it.example && <p className="blk-ex"><span className="mono small">例 · </span>{cell(it.example)}</p>}
+            </div>
+          ))}
+        </div>
+      );
+    case 'callout':
+      return (
+        <aside className={`blk blk-callout ${b.variant ?? 'key'}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {b.image && <img src={b.image} alt={b.imageAlt ?? ''} loading="lazy" referrerPolicy="no-referrer" />}
+          <div>
+            {b.kicker && <div className="mono small blk-kicker">{b.kicker}</div>}
+            {b.title && <div className="blk-callout-title">{cell(b.title)}</div>}
+            <p>{cell(b.text)}</p>
+            {b.credit && (b.creditUrl
+              ? <a className="credit" href={b.creditUrl} target="_blank" rel="noopener noreferrer">資料來源:{b.credit} ↗</a>
+              : <span className="credit">資料來源:{b.credit}</span>)}
+          </div>
+        </aside>
+      );
+    case 'timeline':
+      return (
+        <ol className={`blk blk-timeline${b.items.length > 3 ? ' vertical' : ''}`}>
+          {b.items.map((it, k) => (
+            <li key={k}>
+              <span className="when mono">{it.when}</span>
+              <div className="blk-tl-title">{cell(it.title)}</div>
+              {it.text && <p>{cell(it.text)}</p>}
+            </li>
+          ))}
+        </ol>
+      );
+    case 'chart':
+      return <Chart b={b} />;
+  }
+}
+
 function offsetWithin(unitEl: HTMLElement, node: Node, offset: number) {
   const r = document.createRange();
   r.setStart(unitEl, 0);
@@ -92,8 +175,30 @@ function offsetWithin(unitEl: HTMLElement, node: Node, offset: number) {
   return r.toString().length;
 }
 
-export default function Lesson({ weekNumber, chapters }: { weekNumber: number; chapters: LessonChapter[] }) {
-  const parsed = useMemo(() => chapters.map((c) => ({ ...c, blocks: parseBlocks(c.content) })), [chapters]);
+/** Insert appendix toggles after their anchor: "block:N", a paragraph's opening text, or "end". */
+function withAppendix(blocks: Block[], entries: AppendixEntry[]): Block[] {
+  const out = [...blocks];
+  entries.forEach((e, k) => {
+    const inner = parseBlocks(e.content, e.blocks, 10000 + k * 1000);
+    const node: Block = { kind: 'app', entry: e, inner };
+    let idx = -1;
+    const m = e.after.match(/^block:(\d+)$/);
+    if (m) idx = out.findIndex((b) => b.kind === 'blk' && b.def === Number(m[1]));
+    else if (e.after !== 'end') idx = out.findIndex((b) => (b.kind === 'p' || b.kind === 'li') && b.plain.startsWith(e.after));
+    // keep several toggles at the same spot in file order
+    if (idx >= 0) { while (out[idx + 1]?.kind === 'app') idx++; out.splice(idx + 1, 0, node); } else out.push(node);
+  });
+  return out;
+}
+
+const flatUnits = (bs: Block[]): { unit: number; plain: string }[] =>
+  bs.flatMap((b) => (b.kind === 'h' ? [] : b.kind === 'blk' ? b.units : b.kind === 'app' ? flatUnits(b.inner) : [b]));
+
+export default function Lesson({ weekNumber, chapters, appendix = [] }: { weekNumber: number; chapters: LessonChapter[]; appendix?: AppendixEntry[] }) {
+  const parsed = useMemo(() => chapters.map((c) => ({
+    ...c,
+    blocks: withAppendix(parseBlocks(c.content, c.blocks), appendix.filter((e) => e.chapter === c.number)),
+  })), [chapters, appendix]);
   const [hls, setHls] = useState<Highlight[]>([]);
   const [tool, setTool] = useState<{ x: number; y: number } | null>(null);
   const pending = useRef<{ chapter: number; unit: number; start: number; end: number; text: string } | null>(null);
@@ -102,15 +207,34 @@ export default function Lesson({ weekNumber, chapters }: { weekNumber: number; c
   const rootRef = useRef<HTMLDivElement>(null);
 
   // Load + anchor legacy highlights (saved before paragraph anchors existed).
+  // Deep links from the notebook (#app-<id>) open the toggle.
+  useEffect(() => {
+    const open1 = () => {
+      const id = decodeURIComponent(location.hash.slice(1));
+      if (!id.startsWith('app-')) return;
+      const d = document.getElementById(id) as HTMLDetailsElement | null;
+      if (d) { d.open = true; d.scrollIntoView({ block: 'start' }); }
+    };
+    open1();
+    window.addEventListener('hashchange', open1);
+    return () => window.removeEventListener('hashchange', open1);
+  }, []);
+
   useEffect(() => {
     fetch('/api/highlights').then((r) => (r.ok ? r.json() : [])).then((all: Highlight[]) => {
+      const unitsOf = (c: (typeof parsed)[number]) => flatUnits(c.blocks);
       const mine = all.filter((h) => h.weekNumber === weekNumber).map((h) => {
-        if (h.unit !== undefined) return h;
-        const chs = parsed.filter((c) => h.chapterNumber === undefined || c.number === h.chapterNumber);
-        for (const c of chs) for (const b of c.blocks) {
-          if (b.kind === 'h') continue;
-          const idx = b.plain.indexOf(h.text);
-          if (idx >= 0) return { ...h, chapterNumber: c.number, unit: b.unit, startOffset: idx, endOffset: idx + h.text.length };
+        // Keep the saved anchor if it still points at the same text.
+        if (h.unit !== undefined) {
+          const c = parsed.find((x) => x.number === h.chapterNumber);
+          const u = c && unitsOf(c).find((x) => x.unit === h.unit);
+          if (u && u.plain.slice(h.startOffset, h.endOffset) === h.text) return h;
+        }
+        // Otherwise (legacy, or content re-structured) re-anchor by text, same chapter first.
+        const chs = [...parsed].sort((a, b) => Number(b.number === h.chapterNumber) - Number(a.number === h.chapterNumber));
+        for (const c of chs) for (const u of unitsOf(c)) {
+          const idx = u.plain.indexOf(h.text);
+          if (idx >= 0) return { ...h, chapterNumber: c.number, unit: u.unit, startOffset: idx, endOffset: idx + h.text.length };
         }
         return h;
       });
@@ -205,32 +329,60 @@ export default function Lesson({ weekNumber, chapters }: { weekNumber: number; c
     await fetch('/api/highlights', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', id }) });
   };
 
-  const popStyle = editing
-    ? { left: Math.min(Math.max(editing.x - 150, 8), (typeof window !== 'undefined' ? window.innerWidth : 1200) - 310), top: Math.min(editing.y, (typeof window !== 'undefined' ? window.innerHeight : 800) - 230) }
-    : undefined;
-
-  return (
-    <div ref={rootRef}>
-      {parsed.map((c) => (
-        <section className="chapter" id={c.tab ?? `ch-${c.number}`} key={c.number}>
-          <div className="lesson">
-            <div className="u-row">
-              <div className="text" style={{ paddingBottom: c.number > 0 ? 14 : 0 }}>
-                {c.number > 0 && (
-                  <>
-                    <span className="chip" style={{ background: c.color, color: 'var(--ink)', fontSize: 11 }}>CH. {String(c.number).padStart(2, '0')}</span>
-                    <h2 style={{ fontSize: 24, margin: '10px 0 0', lineHeight: 1.45 }}>{c.title}</h2>
-                  </>
-                )}
-              </div>
-              <div className="margin">{c.number > 0 && <span className="mono small muted">NOTES ✎</span>}</div>
-            </div>
-            {c.blocks.map((b, i) => {
+    const renderItem = (c: { number: number }, b: Block, i: number): React.ReactNode => {
+              if (b.kind === 'app') {
+                const e = b.entry;
+                return (
+                  <div className="u-row" key={`a${e.id}`}>
+                    <div className="text app-wrap" style={{ paddingTop: 2, paddingBottom: 10 }}>
+                      <details className="appx" id={`app-${e.id}`}>
+                        <summary>
+                          <span className="appx-tag mono">延伸問題 · 我的提問</span>
+                          <span className="appx-q hand">{e.question}</span>
+                          <span className="appx-chev mono" aria-hidden>＋</span>
+                        </summary>
+                        <div className="appx-body">
+                          {b.inner.map((x, k) => renderItem(c, x, k))}
+                          {(e.sources?.length || e.source) && (
+                            <div className="appx-src mono small">
+                              {e.sources?.length ? <>資料來源：{e.sources.map((s, k) => <a key={k} href={s.url} target="_blank" rel="noopener noreferrer">{s.name} ↗</a>)}</> : null}
+                              {e.source && <a href={e.source} target="_blank" rel="noopener noreferrer">原始對話 ChatGPT ↗</a>}
+                            </div>
+                          )}
+                        </div>
+                      </details>
+                    </div>
+                    <div className="margin" style={{ padding: 0 }} />
+                  </div>
+                );
+              }
               if (b.kind === 'h') {
                 return (
                   <div className="u-row" key={`h${i}`}>
                     <div className="text" style={{ paddingTop: 0, paddingBottom: 0 }}><h3><span className="zh">{b.text}</span></h3></div>
                     <div className="margin" style={{ padding: 0 }} />
+                  </div>
+                );
+              }
+              if (b.kind === 'blk') {
+                const ids = new Set(b.units.map((x) => x.unit));
+                const bn = hls.filter((h) => h.chapterNumber === c.number && h.unit !== undefined && ids.has(h.unit) && h.note);
+                const cell = (x: U, cls = '') => (
+                  <span className={`unit-in ${cls}`} data-unit={x.unit} data-chapter={c.number}>
+                    {renderUnit(x.raw, hls.filter((h) => h.chapterNumber === c.number && h.unit === x.unit), open)}
+                  </span>
+                );
+                return (
+                  <div className="u-row" key={`b${i}`}>
+                    <div className="text" style={{ paddingTop: 2, paddingBottom: 6 }}>{renderBlock(b.block, cell)}</div>
+                    <div className="margin" style={{ paddingTop: 0, paddingBottom: 0 }}>
+                      {bn.map((h) => (
+                        <div key={h.id} className={`sticky ${h.color}`} onClick={(e) => open(h, e.currentTarget)}>
+                          <div className="q">{h.text}</div>
+                          {h.note}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 );
               }
@@ -253,7 +405,29 @@ export default function Lesson({ weekNumber, chapters }: { weekNumber: number; c
                   </div>
                 </div>
               );
-            })}
+  };
+
+  const popStyle = editing
+    ? { left: Math.min(Math.max(editing.x - 150, 8), (typeof window !== 'undefined' ? window.innerWidth : 1200) - 310), top: Math.min(editing.y, (typeof window !== 'undefined' ? window.innerHeight : 800) - 230) }
+    : undefined;
+
+  return (
+    <div ref={rootRef}>
+      {parsed.map((c) => (
+        <section className="chapter" id={c.tab ?? `ch-${c.number}`} key={c.number}>
+          <div className="lesson">
+            <div className="u-row">
+              <div className="text" style={{ paddingBottom: c.number > 0 ? 14 : 0 }}>
+                {c.number > 0 && (
+                  <>
+                    <span className="chip" style={{ background: c.color, color: 'var(--ink)', fontSize: 11 }}>CH. {String(c.number).padStart(2, '0')}</span>
+                    <h2 style={{ fontSize: 24, margin: '10px 0 0', lineHeight: 1.45 }}>{c.title}</h2>
+                  </>
+                )}
+              </div>
+              <div className="margin">{c.number > 0 && <span className="mono small muted">NOTES ✎</span>}</div>
+            </div>
+            {c.blocks.map((b, i) => renderItem(c, b, i))}
             {c.figures && c.figures.length > 0 && (
               <div className="u-row">
                 <div className="text" style={{ paddingTop: 6 }}>

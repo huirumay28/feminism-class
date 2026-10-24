@@ -236,3 +236,42 @@ Perfect for archiving or sharing your learning journey.
 ---
 
 Built with Next.js, Tailwind CSS, Upstash Redis, and Vercel Blob.
+
+## Structured lesson blocks
+
+A chapter can define `blocks: ContentBlock[]` and place each one in its `content` with a paragraph containing only `[[block:N]]` (N = index in `blocks`). Text inside tables, cards, callouts and timelines is highlightable and can take margin notes like ordinary paragraphs (each cell is its own `data-unit`). Types are in `components/Blocks.tsx`:
+
+| type | fields | renders as |
+|---|---|---|
+| `table` | `columns: string[]`, `rows: string[][]`, `rowHeader?` (first cell = row label), `caption?` | notebook table; scrolls sideways ≤960px, becomes stacked cards (with column labels) ≤600px |
+| `cards` | `items: {title, subtitle?, text, example?, icon?}[]`, `columns?`, `numbered?` | card grid (icons: `book`, `chat`, `users`, `megaphone`); one column on mobile |
+| `callout` | `text`, `title?`, `kicker?`, `variant?: person｜source｜key`, `credit?`, `creditUrl?`, `image?` | boxed aside with coloured left rule |
+| `timeline` | `items: {when, title, text?}[]` | horizontal (≤3 items) or vertical timeline; vertical on mobile |
+| `chart` | `chart: stacked｜bar`, `title`, `data: {label, value}[]`, `total?`, `unit?`, `note?` | inline SVG chart (no library). Not highlightable |
+
+A week can also set `readingsBlocks: ContentBlock[]` (currently charts), shown at the top of 本週閱讀.
+
+Example:
+
+```json
+"content": "例如:\n\n[[block:0]]\n\n三者可能…",
+"blocks": [{ "type": "table", "columns": ["說法", "訴求呈現方式"], "rows": [["…", "…"]] }]
+```
+
+Highlights are stored as chapter + unit + offsets. When content is restructured, the page re-anchors any highlight whose saved unit no longer holds the same text by looking up its text. Keep the original wording when moving text into a block.
+
+## Appendix: Huiru's follow-up questions (延伸問題)
+
+`content/appendix.json` → `entries[]`. Each entry is shown as a collapsible "延伸問題 · 我的提問" toggle inside the lesson. It is closed by default and also listed on 我的筆記 with a deep link (`/week/N#app-<id>` opens it).
+
+| field | meaning |
+|---|---|
+| `id` | stable id (used in the URL hash `#app-<id>`) |
+| `week`, `chapter` | where it lives |
+| `after` | anchor: `"block:N"` (after that chapter block), the opening text of a paragraph (after that paragraph), or `"end"` (end of chapter) |
+| `question` | her question, verbatim; used as the toggle title |
+| `content`, `blocks` | the answer, same markup as chapter content (`###`, `- `, `**bold**`, `[[block:N]]`) |
+| `sources` | `{name, url}[]` verified source links (replace ChatGPT's citation chips) |
+| `source`, `askedOn` | the ChatGPT share link and date |
+
+Text in an opened toggle can be highlighted and annotated. Notes appear inline under the paragraph.

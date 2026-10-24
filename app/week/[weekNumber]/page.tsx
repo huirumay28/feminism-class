@@ -1,15 +1,18 @@
 import week01 from '@/content/weeks/week-01.json';
 import week02 from '@/content/weeks/week-02.json';
+import appendixData from '@/content/appendix.json';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import Lesson, { type LessonChapter, type Figure } from '@/components/Lesson';
+import Lesson, { type LessonChapter, type Figure, type AppendixEntry } from '@/components/Lesson';
 import ReadingChecklist from '@/components/ReadingChecklist';
 import AnswerBox from '@/components/AnswerBox';
+import { Chart, type ContentBlock } from '@/components/Blocks';
 
 interface Reading { id: string; title: string; url: string | null; source: string; description: string; estimatedTime: string; required?: boolean }
 interface WeekData {
   weekNumber: number; title: string; subtitle: string; period: string; introduction: string; learningGoals: string[];
-  chapters: { number: number; title: string; content: string; figures?: Figure[] }[];
+  chapters: { number: number; title: string; content: string; figures?: Figure[]; blocks?: ContentBlock[] }[];
+  readingsBlocks?: ContentBlock[];
   readings: Reading[]; exercises?: { id: string; question: string }[];
   discussionQuestions: { id: string; question: string }[]; homework: { id: string; task: string }[]; nextWeekPreview: string;
 }
@@ -69,7 +72,7 @@ export default async function WeekPage({ params }: { params: Promise<{ weekNumbe
             </div>
           </div>
           <div className="page">
-            <Lesson weekNumber={w.weekNumber} chapters={chapters} />
+            <Lesson weekNumber={w.weekNumber} chapters={chapters} appendix={(appendixData.entries as AppendixEntry[]).filter((e) => e.week === w.weekNumber)} />
           </div>
 
           <div className="tabhead" style={{ marginTop: 28 }}><span className="tab" style={{ ['--c' as string]: C[0] }}>{num(0)} · 學習目標</span></div>
@@ -80,6 +83,7 @@ export default async function WeekPage({ params }: { params: Promise<{ weekNumbe
           <div className="tabhead" id="readings"><span className="tab" style={{ ['--c' as string]: toc[n].color }}>{num(n)} · READINGS</span></div>
           <div className="section-card">
             <h2>本週閱讀</h2>
+            {w.readingsBlocks?.map((b, i) => (b.type === 'chart' ? <Chart key={i} b={b} /> : null))}
             <ReadingChecklist readings={w.readings} weekNumber={w.weekNumber} />
           </div>
 
