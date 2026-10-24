@@ -1,23 +1,10 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
 import { Noto_Serif_TC, IBM_Plex_Mono, LXGW_WenKai_TC } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 
 const serif = Noto_Serif_TC({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-serif", display: "swap" });
 const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-mono", display: "swap" });
-const latinHand = localFont({
-  src: "./fonts/Caveat.ttf",
-  weight: "400 700",
-  variable: "--font-latin-hand",
-  display: "swap",
-  adjustFontFallback: false,
-  // Caveat runs small next to CJK; scale it ~1.18x and only use it for Latin glyphs so Chinese falls through to WenKai.
-  declarations: [
-    { prop: "size-adjust", value: "118%" },
-    { prop: "unicode-range", value: "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215" },
-  ],
-});
 const hand = LXGW_WenKai_TC({ subsets: ["latin"], weight: ["400"], variable: "--font-hand", display: "swap" });
 
 export const metadata: Metadata = {
@@ -27,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-Hant-TW" className={`${serif.variable} ${mono.variable} ${hand.variable} ${latinHand.variable}`}>
+    <html lang="zh-Hant-TW" className={`${serif.variable} ${mono.variable} ${hand.variable}`}>
       <body>
         <header className="topbar">
           <Link href="/" className="logo" aria-label="首頁">♀</Link>
