@@ -1,179 +1,77 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface Reading {
-  id: string;
-  title: string;
-  url: string | null;
-  source: string;
-  description: string;
-  estimatedTime: string;
+  id: string; title: string; url: string | null; source: string; description: string; estimatedTime: string; required?: boolean;
 }
 
-interface ReadingChecklistProps {
-  readings: Reading[];
-  weekNumber: number;
-}
-
-interface ReadingCheck {
-  weekNumber: number;
-  readingId: string;
-  checked: boolean;
-  checkedAt?: number;
-}
-
-interface ReadingNote {
-  id: string;
-  weekNumber: number;
-  readingId: string;
-  note: string;
-  createdAt: number;
-}
-
-export default function ReadingChecklist({ readings, weekNumber }: ReadingChecklistProps) {
+export default function ReadingChecklist({ readings, weekNumber }: { readings: Reading[]; weekNumber: number }) {
   const [checks, setChecks] = useState<Record<string, boolean>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
-  const [expandedNote, setExpandedNote] = useState<string | null>(null);
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   useEffect(() => {
-    fetchChecksAndNotes();
+    Promise.all([fetch('/api/notes?type=checks'), fetch('/api/notes')]).then(async ([c, n]) => {
+      if (c.ok) {
+        const m: Record<string, boolean> = {};
+        (await c.json()).filter((x: { weekNumber: number }) => x.weekNumber === weekNumber)
+          .forEach((x: { readingId: string; checked: boolean }) => { m[x.readingId] = x.checked; });
+        setChecks(m);
+      }
+      if (n.ok) {
+        const m: Record<string, string> = {};
+        (await n.json()).filter((x: { weekNumber: number }) => x.weekNumber === weekNumber)
+          .forEach((x: { readingId: string; note: string }) => { m[x.readingId] = x.note; });
+        setNotes(m);
+      }
+    }).catch(() => {});
   }, [weekNumber]);
 
-  const fetchChecksAndNotes = async () => {
-    try {
-      const [checksRes, notesRes] = await Promise.all([
-        fetch('/api/notes?type=checks'),
-        fetch('/api/notes'),
-      ]);
-
-      if (checksRes.ok) {
-        const checksData: ReadingCheck[] = await checksRes.json();
-        const checksMap: Record<string, boolean> = {};
-        checksData
-          .filter((c) => c.weekNumber === weekNumber)
-          .forEach((c) => {
-            checksMap[c.readingId] = c.checked;
-          });
-        setChecks(checksMap);
-      }
-
-      if (notesRes.ok) {
-        const notesData: ReadingNote[] = await notesRes.json();
-        const notesMap: Record<string, string> = {};
-        notesData
-          .filter((n) => n.weekNumber === weekNumber)
-          .forEach((n) => {
-            notesMap[n.readingId] = n.note;
-          });
-        setNotes(notesMap);
-      }
-    } catch (error) {
-      console.error('Failed to fetch checks and notes:', error);
-    }
+  const toggle = (readingId: string) => {
+    const checked = !checks[readingId];
+    setChecks({ ...checks, [readingId]: checked });
+    fetch('/api/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'saveCheck', check: { weekNumber, readingId, checked, checkedAt: checked ? Date.now() : undefined } }) });
   };
 
-  const toggleCheck = async (readingId: string) => {
-    const newChecked = !checks[readingId];
-    setChecks({ ...checks, [readingId]: newChecked });
-
-    try {
-      await fetch('/api/notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'saveCheck',
-          check: {
-            weekNumber,
-            readingId,
-            checked: newChecked,
-            checkedAt: newChecked ? Date.now() : undefined,
-          },
-        }),
-      });
-    } catch (error) {
-      console.error('Failed to save check:', error);
-    }
+  const saveNote = (readingId: string, note: string) => {
+    setNotes((x) => ({ ...x, [readingId]: note }));
+    clearTimeout(timers.current[readingId]);
+    timers.current[readingId] = setTimeout(() => {
+      fetch('/api/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'saveNote', note: { id: `${weekNumber}-${readingId}`, weekNumber, readingId, note, createdAt: Date.now() } }) });
+    }, 800);
   };
 
-  const saveNote = async (readingId: string, note: string) => {
-    setNotes({ ...notes, [readingId]: note });
-
-    try {
-      await fetch('/api/notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'saveNote',
-          note: {
-            id: `${weekNumber}-${readingId}`,
-            weekNumber,
-            readingId,
-            note,
-            createdAt: Date.now(),
-          },
-        }),
-      });
-    } catch (error) {
-      console.error('Failed to save note:', error);
-    }
-  };
+  const done = readings.filter((r) => checks[r.id]).length;
 
   return (
-    <div className="space-y-4">
-      {readings.map((reading) => (
-        <div key={reading.id} className="border border-gray-200 rounded-lg p-4 bg-white">
-          <div className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              checked={checks[reading.id] || false}
-              onChange={() => toggleCheck(reading.id)}
-              className="mt-1 w-5 h-5 rounded border-gray-200 text-blue-600 focus:ring-blue-600"
-            />
-            <div className="flex-1">
-              <div className="mb-2">
-                {reading.url ? (
-                  <a
-                    href={reading.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium text-lg hover:underline"
-                  >
-                    {reading.title}
-                  </a>
-                ) : (
-                  <span className="font-medium text-lg text-gray-600">
-                    {reading.title}
-                  </span>
-                )}
-                <div className="text-sm text-gray-600 mt-1">
-                  {reading.source} · {reading.estimatedTime}
-                </div>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">{reading.description}</p>
-
-              <div>
-                <button
-                  onClick={() =>
-                    setExpandedNote(expandedNote === reading.id ? null : reading.id)
-                  }
-                  className="text-sm text-blue-600 hover:underline"
-                >
-                  {notes[reading.id] ? '檢視筆記' : '新增筆記'}
-                </button>
-
-                {expandedNote === reading.id && (
-                  <div className="mt-3">
-                    <textarea
-                      value={notes[reading.id] || ''}
-                      onChange={(e) => saveNote(reading.id, e.target.value)}
-                      placeholder="你對這篇閱讀的想法或重點摘要..."
-                      className="w-full h-24 p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
-                    />
-                  </div>
-                )}
-              </div>
+    <div>
+      <div className="mono small muted" style={{ marginBottom: 4 }}>PROGRESS {done}/{readings.length}</div>
+      {readings.map((r, i) => (
+        <div className="reading" key={r.id}>
+          <button className={`check ${checks[r.id] ? 'on' : ''}`} onClick={() => toggle(r.id)} aria-label={checks[r.id] ? '標為未讀' : '標為已讀'}>
+            {checks[r.id] ? '✓' : ''}
+          </button>
+          <div>
+            <div className="meta">
+              <span className="chip">{String(i + 1).padStart(2, '0')}</span>
+              <span className={`chip ${r.required === false ? '' : 'on'}`}>{r.required === false ? '選讀' : '必讀'}</span>
+              <span className="chip">{r.estimatedTime}</span>
             </div>
+            <h4>{r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer">{r.title} ↗</a> : r.title}</h4>
+            <div className="mono small muted">{r.source}</div>
+            <p>{r.description}</p>
+            <button className="btn" style={{ padding: '2px 10px', marginTop: 4 }} onClick={() => setOpen({ ...open, [r.id]: !open[r.id] })}>
+              {open[r.id] ? '收起筆記' : notes[r.id] ? '✎ 我的閱讀筆記' : '✎ 寫閱讀筆記'}
+            </button>
+            {open[r.id] && (
+              <textarea className="ruled" style={{ marginTop: 8, border: '1px solid rgba(29,27,23,.3)', minHeight: 130 }}
+                value={notes[r.id] || ''} onChange={(e) => saveNote(r.id, e.target.value)} placeholder="摘錄、疑問、想法…" />
+            )}
+            {!open[r.id] && notes[r.id] && <div className="hand" style={{ marginTop: 6, color: 'var(--ink-2)' }}>{notes[r.id].slice(0, 80)}{notes[r.id].length > 80 ? '…' : ''}</div>}
           </div>
         </div>
       ))}

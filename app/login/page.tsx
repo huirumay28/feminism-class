@@ -11,22 +11,20 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
       const response = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ passcode }),
       });
-
       if (response.ok) {
         // Full navigation so the new cookie is sent and no cached redirect is reused.
         window.location.assign('/');
       } else {
-        const data = await response.json();
-        setError(data.error || '密碼錯誤');
+        const data = await response.json().catch(() => ({}));
+        setError(data.error === 'Invalid passcode' ? '密碼不正確' : data.error || '密碼不正確');
       }
-    } catch (err) {
+    } catch {
       setError('發生錯誤,請稍後再試');
     } finally {
       setLoading(false);
@@ -34,39 +32,34 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-        <h1 className="text-2xl font-semibold mb-6 text-center">
-          台灣女性主義與公益實務課程
-        </h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="passcode" className="block text-sm font-medium mb-2">
-              請輸入課程密碼
-            </label>
-            <input
-              type="password"
-              id="passcode"
-              value={passcode}
-              onChange={(e) => setPasscode(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-              placeholder="密碼"
-              autoComplete="current-password"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              disabled={loading}
-            />
-          </div>
-          {error && (
-            <p className="text-sm text-red-600">{error}</p>
-          )}
-          <button
-            type="submit"
+    <div className="login">
+      <div className="card folder">
+        <div className="tabs">
+          <span style={{ background: 'var(--t1)' }}>01</span>
+          <span style={{ background: 'var(--t5)' }}>02</span>
+          <span style={{ background: 'var(--t7)' }}>03</span>
+        </div>
+        <form onSubmit={handleSubmit} className="body page" style={{ padding: '30px 28px' }}>
+          <div className="rule" />
+          <div className="en" style={{ fontSize: 13 }}>Study Notebook —<br />Private</div>
+          <h1 style={{ fontSize: 24, margin: '14px 0 16px' }}>台灣女性主義與公益實務</h1>
+          <label htmlFor="passcode" className="mono small">PASSCODE · 課程密碼</label>
+          <input
+            type="password"
+            id="passcode"
+            value={passcode}
+            onChange={(e) => setPasscode(e.target.value)}
+            placeholder="••••"
+            autoComplete="current-password"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:opacity-90 disabled:opacity-50 font-medium"
-          >
-            {loading ? '驗證中...' : '進入'}
+            style={{ marginTop: 6 }}
+          />
+          {error && <p className="small" style={{ color: '#c0392b', margin: '8px 0 0' }}>{error}</p>}
+          <button type="submit" disabled={loading} className="btn primary" style={{ marginTop: 16, width: '100%', justifyContent: 'center' }}>
+            {loading ? '驗證中…' : '打開筆記本 →'}
           </button>
         </form>
       </div>
