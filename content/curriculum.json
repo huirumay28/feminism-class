@@ -18,8 +18,8 @@
         },
         {
           "week": 2,
-          "title": "解嚴後的法律改革與制度化 (1987–2000)",
-          "status": "upcoming"
+          "title": "誰的女性主義?台灣早期婦運的階級、思想與代表性",
+          "status": "available"
         },
         {
           "week": 3,
@@ -178,5 +178,6 @@
         }
       ]
     }
-  ]
+  ],
+  "currentWeek": 2
 }

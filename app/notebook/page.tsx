@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import week1 from '@/content/weeks/week-01.json';
+import week2 from '@/content/weeks/week-02.json';
+
+const WEEKS: Record<number, { readings: { id: string; title: string }[]; exercises?: { id: string; question: string }[]; discussionQuestions: { id: string; question: string }[]; homework: { id: string; task: string }[] }> = { 1: week1, 2: week2 };
 
 interface Highlight {
   id: string;
@@ -136,11 +139,12 @@ export default function NotebookPage() {
   const COLOR: Record<string, string> = { yellow: '#f5d84a', blue: '#6cc0ff', green: '#a9cc4b', orange: '#ffab3d' };
   const TYPE: Record<string, string> = { exercise: '閱讀問題與練習', discussion: '課堂討論', homework: '小作業' };
   const questionFor = (w: number, id: string) => {
-    if (w !== 1) return id;
-    const all = [...(week1.exercises || []), ...week1.discussionQuestions, ...week1.homework.map((h) => ({ id: h.id, question: h.task }))];
+    const wk = WEEKS[w];
+    if (!wk) return id;
+    const all = [...(wk.exercises || []), ...wk.discussionQuestions, ...wk.homework.map((h) => ({ id: h.id, question: h.task }))];
     return all.find((q) => q.id === id)?.question || id;
   };
-  const readingTitle = (w: number, id: string) => (w === 1 ? week1.readings.find((r) => r.id === id)?.title : undefined) || id;
+  const readingTitle = (w: number, id: string) => WEEKS[w]?.readings.find((r) => r.id === id)?.title || id;
 
   const weeks = Array.from(new Set([...highlights, ...readingNotes, ...answers].map((x) => x.weekNumber))).sort((a, b) => a - b);
 
