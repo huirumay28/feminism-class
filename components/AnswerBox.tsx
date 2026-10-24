@@ -1,5 +1,6 @@
 'use client';
 
+import { MdToolbar, mdKeyDown } from './NoteMd';
 import { useEffect, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
 
@@ -73,7 +74,10 @@ export default function AnswerBox({ items, weekNumber, itemType, color }: { item
               <div className="qnum">{LABEL[itemType]}{String(i + 1).padStart(2, '0')}</div>
               <div className="qtext">{item.question || item.task}</div>
             </div>
+            <MdToolbar get={() => document.getElementById(`ans-${item.id}`) as HTMLTextAreaElement | null} set={(v, x, y) => { update(item.id, { text: v }); requestAnimationFrame(() => { const t = document.getElementById(`ans-${item.id}`) as HTMLTextAreaElement | null; if (t && document.activeElement !== t) { t.focus(); t.setSelectionRange(x, y); } }); }} />
             <textarea
+              id={`ans-${item.id}`}
+              onKeyDown={(e) => mdKeyDown(e, (v) => update(item.id, { text: v }))}
               className="ruled"
               value={a?.text || ''}
               onChange={(e) => update(item.id, { text: e.target.value })}

@@ -1,5 +1,6 @@
 'use client';
 
+import { NoteMd } from '@/components/NoteMd';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import week1 from '@/content/weeks/week-01.json';
@@ -98,7 +99,7 @@ export default function NotebookPage() {
         weekHighlights.forEach((h) => {
           markdown += `> ${h.text}\n\n`;
           if (h.note) {
-            markdown += `**筆記：** ${h.note}\n\n`;
+            markdown += `**筆記：**\n\n${h.note}\n\n`;
           }
         });
       }
@@ -107,7 +108,7 @@ export default function NotebookPage() {
       if (weekReadingNotes.length > 0) {
         markdown += `### 閱讀筆記\n\n`;
         weekReadingNotes.forEach((n) => {
-          markdown += `- ${n.note}\n\n`;
+          markdown += `${n.note}\n\n---\n\n`;
         });
       }
 
@@ -199,7 +200,7 @@ export default function NotebookPage() {
                 {hs.map((h) => (
                   <div className="nb-item" key={h.id}>
                     <div className="nb-quote" style={{ ['--c' as string]: COLOR[h.color] || COLOR.yellow }}>{h.text}</div>
-                    {h.note && <div className="hand" style={{ marginTop: 6, paddingLeft: 16 }}>✎ {h.note}</div>}
+                    {h.note && <NoteMd className="hand" style={{ marginTop: 6, paddingLeft: 16 }} text={h.note} />}
                   </div>
                 ))}
               </>)}
@@ -208,7 +209,7 @@ export default function NotebookPage() {
                 {ns.map((n) => (
                   <div className="nb-item" key={n.id}>
                     <div className="mono small muted">{readingTitle(w, n.readingId)}</div>
-                    <div className="hand" style={{ whiteSpace: 'pre-wrap' }}>{n.note}</div>
+                    <NoteMd className="hand" text={n.note} />
                   </div>
                 ))}
               </>)}
@@ -218,7 +219,7 @@ export default function NotebookPage() {
                   <div className="nb-item" key={a.id}>
                     <div className="mono small muted">{TYPE[a.itemType]}</div>
                     <div style={{ fontWeight: 700, fontSize: 15 }}>{questionFor(w, a.itemId)}</div>
-                    <div className="hand" style={{ whiteSpace: 'pre-wrap', marginTop: 4 }}>{a.text}</div>
+                    <NoteMd className="hand" style={{ marginTop: 4 }} text={a.text} />
                     {a.uploads && a.uploads.length > 0 && (
                       <div className="files" style={{ marginTop: 6 }}>
                         {a.uploads.map((u, k) => <a key={k} className="chip" href={u} target="_blank" rel="noopener noreferrer">📎 附件 {k + 1}</a>)}

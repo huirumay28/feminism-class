@@ -131,7 +131,7 @@ button, input, textarea { font: inherit; color: inherit; }
 .cover-head .meta { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* lesson paper: text column + red margin + notes column (ref: grid paper with red margin lines) */
-.lesson { display: grid; grid-template-columns: minmax(0, 1fr) 250px; }
+.lesson { display: grid; grid-template-columns: minmax(0, 1fr) 280px; }
 .lesson .text { padding: 26px 36px 30px 52px; border-right: 1.5px solid var(--margin-red); position: relative; }
 .lesson .text::before { content: ""; position: absolute; left: 34px; top: 0; bottom: 0; border-left: 1.5px solid var(--margin-red); }
 .lesson .margin { padding: 26px 16px; position: relative; }
@@ -389,9 +389,56 @@ table.contents a { font-weight: 700; }
 .appx .u-row { display: block; }
 .appx .text { padding: 0 !important; border: 0; }
 .appx .text::before { display: none; }
-.appx .margin { display: block !important; padding: 0; border: 0; background: none; }
-.appx .margin:empty { display: none !important; }
 .appx h3 { margin: 14px 0 8px; }
 .appx-src { display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--ink-3); border-top: 1px dashed var(--rule); padding-top: 8px; margin: 6px 0 4px; }
 .appx-src a { color: var(--ink-3); }
 @media (max-width: 960px) { .appx-body { padding: 10px 12px 6px; } .appx-q { font-size: 16px; } }
+
+/* ---- margin notes layer (Google-Docs style: notes float, text never moves) ---- */
+.mlayer { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.mlayer > * { pointer-events: auto; }
+.mconn { pointer-events: none !important; }
+.mconn path { fill: none; stroke: var(--orange); stroke-width: 1.3; stroke-dasharray: 3 3; opacity: .85; }
+.mnote { margin: 0; transition: top .18s ease, box-shadow .15s, transform .15s; box-sizing: border-box; }
+.mnote .txt { overflow-wrap: anywhere; }
+.mnote:not(.open) .txt { max-height: 6.4em; overflow: hidden; }
+.mnote .more { border: 0; background: none; padding: 2px 0 0; font-size: 11px; color: var(--orange); cursor: pointer; }
+.mnote:hover { box-shadow: 2px 2px 0 rgba(29,27,23,.35); }
+.mnote.on { box-shadow: 3px 3px 0 var(--ink); border-color: var(--ink); transform: translateX(-4px); z-index: 2; }
+.mnote .ed-hint { display: block; font-size: 10px; color: var(--ink-3); margin-top: 4px; }
+mark.hl.hl-on, mark.hl.hl-hover { box-shadow: 0 2px 0 var(--orange); filter: saturate(1.6) brightness(.96); }
+
+.note-ed { width: 300px; min-height: 140px; resize: both; overflow: auto; box-sizing: border-box; z-index: 70; max-width: calc(100vw - 16px); }
+.note-ed .ed-handle { display: flex; gap: 6px; align-items: center; cursor: grab; margin: -4px -4px 6px; padding: 2px 4px; user-select: none; touch-action: none; }
+.note-ed .ed-handle:active { cursor: grabbing; }
+.note-ed .ed-handle .grip { color: var(--ink-3); font-size: 14px; }
+.note-ed .ed-handle .q { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note-ed textarea { resize: none; min-height: 0; display: block; }
+
+/* tablet drawer */
+.ndrawer-tab { position: fixed; right: 0; top: 45%; z-index: 55; background: var(--ink); color: var(--paper); border: 0; padding: 10px 8px; writing-mode: vertical-rl; cursor: pointer; font-size: 12px; border-radius: 4px 0 0 4px; }
+.ndrawer { position: fixed; right: 0; top: 56px; bottom: 0; width: 320px; z-index: 54; background: var(--paper); border-left: var(--line); padding: 16px 30px 24px 16px; overflow-y: auto; box-shadow: -6px 0 0 rgba(29,27,23,.08); }
+.ndrawer .mnote { margin-bottom: 14px; }
+@media (min-width: 961px) and (max-width: 1199px) {
+  .lesson { grid-template-columns: minmax(0, 1fr); }
+  .lesson .margin { display: none; }
+  .lesson .text { border-right: 0; }
+}
+
+/* mobile bottom sheet editor */
+@media (max-width: 960px) {
+  .note-pop.sheet { left: 0 !important; right: 0 !important; bottom: 0 !important; top: auto !important; width: auto; max-width: none; min-height: 0; resize: none; border-radius: 10px 10px 0 0; box-shadow: 0 -4px 0 rgba(29,27,23,.15); padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+  .note-pop.sheet .ed-handle { cursor: default; justify-content: center; }
+  .note-pop.sheet .ed-handle::before { content: ""; position: absolute; top: 5px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: rgba(29,27,23,.25); }
+}
+.ndrawer-tab.open { right: 320px; }
+
+/* note formatting (markdown subset) */
+.md .md-li { position: relative; }
+.md .md-mk { position: absolute; margin-left: -1.25em; width: 1.1em; text-align: right; color: var(--ink-3); }
+.md .md-li.done { color: var(--ink-3); text-decoration: line-through; }
+.md strong { font-weight: 700; }
+.mdbar { display: flex; gap: 2px; margin: 0 0 6px; flex-wrap: wrap; }
+.mdbar button { border: 1px solid transparent; background: transparent; padding: 1px 7px; font-size: 12px; cursor: pointer; color: var(--ink-2); border-radius: 3px; min-width: 24px; }
+.mdbar button:hover { border-color: rgba(29,27,23,.35); background: var(--paper-2); }
+.qcard .mdbar { margin: 6px 0 -2px; }

@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
+import { NoteMd, MdToolbar, mdKeyDown } from './NoteMd';
 import { parseContentBlock, Chart, Icon, type ContentBlock, type ParsedBlock, type U } from './Blocks';
 
 export interface Figure { src: string; caption: string; credit: string; creditUrl: string }
@@ -194,6 +195,10 @@ function withAppendix(blocks: Block[], entries: AppendixEntry[]): Block[] {
 const flatUnits = (bs: Block[]): { unit: number; plain: string }[] =>
   bs.flatMap((b) => (b.kind === 'h' ? [] : b.kind === 'blk' ? b.units : b.kind === 'app' ? flatUnits(b.inner) : [b]));
 
+type Mode = 'margin' | 'drawer' | 'mobile';
+interface Editing { h: Highlight; dx: number; dy: number }
+const GAP = 10;
+
 export default function Lesson({ weekNumber, chapters, appendix = [] }: { weekNumber: number; chapters: LessonChapter[]; appendix?: AppendixEntry[] }) {
   const parsed = useMemo(() => chapters.map((c) => ({
     ...c,
@@ -202,9 +207,155 @@ export default function Lesson({ weekNumber, chapters, appendix = [] }: { weekNu
   const [hls, setHls] = useState<Highlight[]>([]);
   const [tool, setTool] = useState<{ x: number; y: number } | null>(null);
   const pending = useRef<{ chapter: number; unit: number; start: number; end: number; text: string } | null>(null);
-  const [editing, setEditing] = useState<{ h: Highlight; x: number; y: number } | null>(null);
+  const [editing, setEditing] = useState<Editing | null>(null);
   const [draft, setDraft] = useState('');
   const rootRef = useRef<HTMLDivElement>(null);
+  // ---- Google-Docs-style margin layer -------------------------------------------------
+  const [mode, setMode] = useState<Mode>('margin');
+  const [active, setActive] = useState<string | null>(null);
+  const [hover, setHover] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [drawer, setDrawer] = useState(false);
+  const [pos, setPos] = useState<Record<string, number>>({});
+  const [anchors, setAnchors] = useState<Record<string, number>>({});
+  const [layer, setLayer] = useState<{ left: number; width: number; textRight: number } | null>(null);
+  const [conn, setConn] = useState<{ x1: number; y1: number; x2: number; x3: number; y3: number } | null>(null);
+  const cardRefs = useRef(new Map<string, HTMLDivElement>());
+  const edRef = useRef<HTMLDivElement>(null);
+  const taRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const m = () => setMode(window.innerWidth <= 960 ? 'mobile' : window.innerWidth < 1200 ? 'drawer' : 'margin');
+    m();
+    window.addEventListener('resize', m);
+    return () => window.removeEventListener('resize', m);
+  }, []);
+
+  const relayout = useCallback(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const rr = root.getBoundingClientRect();
+    const markOf = (id: string) => root.querySelector(`mark[data-hid="${id}"]`) as HTMLElement | null;
+    const visible = (el: HTMLElement | null) => !!el && el.getClientRects().length > 0;
+    const edId = editing?.h.id;
+    const focus = edId ?? active;
+    if (mode === 'margin') {
+      const m = root.querySelector('.lesson .margin') as HTMLElement | null;
+      if (m) {
+        const mr = m.getBoundingClientRect();
+        const nl = { left: mr.left - rr.left + 12, width: mr.width - 26, textRight: mr.left - rr.left };
+        setLayer((o) => (o && o.left === nl.left && o.width === nl.width && o.textRight === nl.textRight ? o : nl));
+      }
+    }
+    const items: { id: string; top: number; h: number }[] = [];
+    const anc: Record<string, number> = {};
+    const ids = hls.filter((h) => h.note || h.id === edId).map((h) => h.id);
+    for (const id of ids) {
+      const mk = markOf(id);
+      if (!visible(mk)) continue;
+      const top = mk!.getBoundingClientRect().top - rr.top - 4;
+      anc[id] = top;
+      const isEd = id === edId && editing && mode === 'margin';
+      if (isEd && (editing!.dx || editing!.dy)) continue; // a dragged editor floats free
+      const el = isEd ? edRef.current : cardRefs.current.get(id);
+      items.push({ id, top, h: el ? el.offsetHeight : 60 });
+    }
+    items.sort((a, b) => a.top - b.top);
+    const out: Record<string, number> = {};
+    const k = items.findIndex((x) => x.id === focus);
+    if (k >= 0) {
+      out[items[k].id] = items[k].top;
+      let bottom = items[k].top + items[k].h;
+      for (let i = k + 1; i < items.length; i++) { const y = Math.max(items[i].top, bottom + GAP); out[items[i].id] = y; bottom = y + items[i].h; }
+      let ceil = items[k].top;
+      for (let i = k - 1; i >= 0; i--) { const y = Math.min(items[i].top, ceil - GAP - items[i].h); out[items[i].id] = y; ceil = y; }
+    } else {
+      let bottom = -Infinity;
+      for (const it of items) { const y = Math.max(it.top, bottom + GAP); out[it.id] = y; bottom = y + it.h; }
+    }
+    setPos((o) => (JSON.stringify(o) === JSON.stringify(out) ? o : out));
+    setAnchors((o) => (JSON.stringify(o) === JSON.stringify(anc) ? o : anc));
+    // connector for the active pair
+    let c: typeof conn = null;
+    const mk = focus ? markOf(focus) : null;
+    if (mode === 'margin' && focus && visible(mk) && out[focus] !== undefined) {
+      const rects = mk!.getClientRects();
+      const last = rects[rects.length - 1];
+      const m = root.querySelector('.lesson .margin') as HTMLElement | null;
+      const tr = m ? m.getBoundingClientRect().left - rr.left : last.right - rr.left + 20;
+      c = { x1: last.right - rr.left + 2, y1: last.bottom - rr.top - 2, x2: tr, x3: tr + 12, y3: out[focus] + 16 };
+    }
+    setConn((o) => (JSON.stringify(o) === JSON.stringify(c) ? o : c));
+  }, [hls, active, editing, mode]);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(relayout);
+    return () => cancelAnimationFrame(id);
+  });
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    let raf = 0;
+    const kick = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(relayout); };
+    const ro = new ResizeObserver(kick);
+    ro.observe(root);
+    document.fonts?.ready.then(kick);
+    root.addEventListener('toggle', kick, true);
+    root.addEventListener('load', kick, true);
+    window.addEventListener('resize', kick);
+    return () => { ro.disconnect(); root.removeEventListener('toggle', kick, true); root.removeEventListener('load', kick, true); window.removeEventListener('resize', kick); cancelAnimationFrame(raf); };
+  }, [relayout]);
+
+  // emphasise the highlight belonging to the hovered / active note
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    root.querySelectorAll('mark.hl-on, mark.hl-hover').forEach((m) => m.classList.remove('hl-on', 'hl-hover'));
+    const on = editing?.h.id ?? active;
+    if (on) root.querySelectorAll(`mark[data-hid="${on}"]`).forEach((m) => m.classList.add('hl-on'));
+    if (hover) root.querySelectorAll(`mark[data-hid="${hover}"]`).forEach((m) => m.classList.add('hl-hover'));
+  });
+
+  // clicking empty page space deactivates the current note
+  useEffect(() => {
+    const off = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      if (t.closest('mark.hl, .mnote, .note-ed, .seltool, .ndrawer, .ndrawer-tab')) return;
+      if (!editing) setActive(null);
+    };
+    document.addEventListener('mousedown', off);
+    return () => document.removeEventListener('mousedown', off);
+  }, [editing]);
+
+  // editor: auto-grow textarea; on mobile keep the highlighted line visible above the sheet
+  useLayoutEffect(() => {
+    const ta = taRef.current;
+    if (!ta) return;
+    const max = mode === 'mobile' ? Math.round(window.innerHeight * 0.38) : 420;
+    ta.style.height = 'auto';
+    ta.style.height = `${Math.min(Math.max(ta.scrollHeight + 2, mode === 'mobile' ? 84 : 96), max)}px`;
+    ta.style.overflowY = ta.scrollHeight + 2 > max ? 'auto' : 'hidden';
+    if (mode === 'mobile' && editing && edRef.current) {
+      const mk = rootRef.current?.querySelector(`mark[data-hid="${editing.h.id}"]`);
+      if (mk) {
+        const r = mk.getBoundingClientRect();
+        const limit = window.innerHeight - edRef.current.offsetHeight - 16;
+        if (r.bottom > limit) window.scrollBy({ top: r.bottom - limit });
+        else if (r.top < 64) window.scrollBy({ top: r.top - 64 });
+      }
+    }
+  }, [draft, editing, mode]);
+
+  const startDrag = (e: React.PointerEvent) => {
+    if (!editing || mode === 'mobile') return;
+    e.preventDefault();
+    const sx = e.clientX, sy = e.clientY, ox = editing.dx, oy = editing.dy;
+    const move = (ev: PointerEvent) => setEditing((ed) => (ed ? { ...ed, dx: ox + ev.clientX - sx, dy: oy + ev.clientY - sy } : ed));
+    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
 
   // Load + anchor legacy highlights (saved before paragraph anchors existed).
   // Deep links from the notebook (#app-<id>) open the toggle.
@@ -294,14 +445,18 @@ export default function Lesson({ weekNumber, chapters, appendix = [] }: { weekNu
     setTool(null);
     pending.current = null;
     window.getSelection()?.removeAllRanges();
-    if (withNote && at) { setDraft(''); setEditing({ h, x: at.x, y: at.y }); }
+    if (withNote && at) { setDraft(''); setActive(h.id); setEditing({ h, dx: 0, dy: 0 }); }
     await fetch('/api/highlights', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'save', highlight: h }) });
   };
 
-  const open = (h: Highlight, el: HTMLElement) => {
-    const r = el.getBoundingClientRect();
-    setDraft(h.note || '');
-    setEditing({ h, x: r.left + r.width / 2, y: r.bottom + 8 });
+  const edit = (h: Highlight) => { setDraft(h.note || ''); setActive(h.id); setEditing({ h, dx: 0, dy: 0 }); };
+  // Clicking a highlight: on desktop it activates its margin note (or opens the editor if it has none);
+  // on tablet it opens the drawer at that note; on mobile it opens the bottom sheet.
+  const open = (h: Highlight, _el: HTMLElement) => {
+    if (mode === 'mobile' || !h.note) { edit(h); return; }
+    if (mode === 'drawer') setDrawer(true);
+    if (active === h.id && !editing) { edit(h); return; }
+    setActive(h.id);
   };
 
   const saveNote = async () => {
@@ -309,6 +464,7 @@ export default function Lesson({ weekNumber, chapters, appendix = [] }: { weekNu
     const { h } = editing;
     setHls((x) => x.map((y) => (y.id === h.id ? { ...y, note: draft } : y)));
     setEditing(null);
+    setActive(draft.trim() ? h.id : null);
     await fetch('/api/highlights', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'updateNote', id: h.id, note: draft }) });
   };
 
@@ -326,6 +482,7 @@ export default function Lesson({ weekNumber, chapters, appendix = [] }: { weekNu
     const id = editing.h.id;
     setHls((x) => x.filter((y) => y.id !== id));
     setEditing(null);
+    setActive(null);
     await fetch('/api/highlights', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', id }) });
   };
 
@@ -365,8 +522,6 @@ export default function Lesson({ weekNumber, chapters, appendix = [] }: { weekNu
                 );
               }
               if (b.kind === 'blk') {
-                const ids = new Set(b.units.map((x) => x.unit));
-                const bn = hls.filter((h) => h.chapterNumber === c.number && h.unit !== undefined && ids.has(h.unit) && h.note);
                 const cell = (x: U, cls = '') => (
                   <span className={`unit-in ${cls}`} data-unit={x.unit} data-chapter={c.number}>
                     {renderUnit(x.raw, hls.filter((h) => h.chapterNumber === c.number && h.unit === x.unit), open)}
@@ -375,19 +530,11 @@ export default function Lesson({ weekNumber, chapters, appendix = [] }: { weekNu
                 return (
                   <div className="u-row" key={`b${i}`}>
                     <div className="text" style={{ paddingTop: 2, paddingBottom: 6 }}>{renderBlock(b.block, cell)}</div>
-                    <div className="margin" style={{ paddingTop: 0, paddingBottom: 0 }}>
-                      {bn.map((h) => (
-                        <div key={h.id} className={`sticky ${h.color}`} onClick={(e) => open(h, e.currentTarget)}>
-                          <div className="q">{h.text}</div>
-                          {h.note}
-                        </div>
-                      ))}
-                    </div>
+                    <div className="margin" style={{ padding: 0 }} />
                   </div>
                 );
               }
               const mine = hls.filter((h) => h.chapterNumber === c.number && h.unit === b.unit);
-              const notes = mine.filter((h) => h.note);
               return (
                 <div className="u-row" key={`u${b.unit}`}>
                   <div className="text" style={{ paddingTop: 0, paddingBottom: 0 }}>
@@ -395,24 +542,55 @@ export default function Lesson({ weekNumber, chapters, appendix = [] }: { weekNu
                       {renderUnit(b.raw, mine, open)}
                     </p>
                   </div>
-                  <div className="margin" style={{ paddingTop: 0, paddingBottom: 0 }}>
-                    {notes.map((h) => (
-                      <div key={h.id} className={`sticky ${h.color}`} onClick={(e) => open(h, e.currentTarget)}>
-                        <div className="q">{h.text}</div>
-                        {h.note}
-                      </div>
-                    ))}
-                  </div>
+                  <div className="margin" style={{ padding: 0 }} />
                 </div>
               );
   };
 
-  const popStyle = editing
-    ? { left: Math.min(Math.max(editing.x - 150, 8), (typeof window !== 'undefined' ? window.innerWidth : 1200) - 310), top: Math.min(editing.y, (typeof window !== 'undefined' ? window.innerHeight : 800) - 230) }
-    : undefined;
+  const mdSet = (v: string, a: number, b: number) => {
+    setDraft(v);
+    requestAnimationFrame(() => { const t = taRef.current; if (t && document.activeElement !== t) { t.focus(); t.setSelectionRange(a, b); } });
+  };
+  const noted = hls.filter((h) => h.note);
+  const isLong = (t: string) => t.length > 80 || t.split('\n').length > 4;
+  const card = (h: Highlight, style?: React.CSSProperties) => {
+    const on = active === h.id;
+    const opened = on || expanded.has(h.id);
+    return (
+      <div
+        key={h.id}
+        ref={(el) => { if (el) cardRefs.current.set(h.id, el); else cardRefs.current.delete(h.id); }}
+        className={`mnote sticky ${h.color} ${on ? 'on' : ''} ${opened ? 'open' : ''}`}
+        style={style}
+        data-nid={h.id}
+        onMouseEnter={() => setHover(h.id)}
+        onMouseLeave={() => setHover(null)}
+        onClick={() => {
+          if (on) { edit(h); return; }
+          setActive(h.id);
+          if (mode === 'drawer') rootRef.current?.querySelector(`mark[data-hid="${h.id}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }}
+      >
+        <div className="q">{h.text}</div>
+        <NoteMd className="txt" text={h.note || ''} />
+        {isLong(h.note || '') && !opened && (
+          <button className="more mono" onClick={(e) => { e.stopPropagation(); setExpanded((s) => new Set(s).add(h.id)); }}>more ↓</button>
+        )}
+        {on && <span className="ed-hint mono">✎ 點一下編輯</span>}
+      </div>
+    );
+  };
+
+  const edBase = editing ? anchors[editing.h.id] : undefined;
+  const edPlaced = editing && mode === 'margin' && layer && edBase !== undefined;
+  const edStyle: React.CSSProperties | undefined = !editing || mode === 'mobile'
+    ? undefined
+    : edPlaced
+      ? { position: 'absolute', left: layer!.left + layer!.width + 12 - 300 + editing.dx, top: (editing.dx || editing.dy ? edBase! : pos[editing.h.id] ?? edBase!) + editing.dy }
+      : { position: 'fixed', right: 24 - editing.dx, top: 120 + editing.dy };
 
   return (
-    <div ref={rootRef}>
+    <div ref={rootRef} className={`lesson-root mode-${mode}`} style={{ position: 'relative' }}>
       {parsed.map((c) => (
         <section className="chapter" id={c.tab ?? `ch-${c.number}`} key={c.number}>
           <div className="lesson">
@@ -452,6 +630,36 @@ export default function Lesson({ weekNumber, chapters, appendix = [] }: { weekNu
         </section>
       ))}
 
+      {/* margin layer: notes float beside their highlight and never change text layout */}
+      {mode === 'margin' && layer && (
+        <div className="mlayer" aria-label="頁邊筆記">
+          {conn && (
+            <svg className="mconn" aria-hidden style={{ position: 'absolute', left: 0, top: 0, width: 1, height: 1, overflow: 'visible' }}>
+              <path d={`M${conn.x1} ${conn.y1} H${conn.x2} L${conn.x3} ${conn.y3} H${layer.left}`} />
+            </svg>
+          )}
+          {noted.filter((h) => !(editing && editing.h.id === h.id)).map((h) => card(h, {
+            position: 'absolute', left: layer.left, width: layer.width, top: pos[h.id] ?? 0,
+            visibility: pos[h.id] === undefined ? 'hidden' : 'visible',
+          }))}
+        </div>
+      )}
+
+      {/* tablet: notes live in a collapsible side drawer */}
+      {mode === 'drawer' && noted.length > 0 && (
+        <>
+          <button className={`ndrawer-tab mono ${drawer ? "open" : ""}`} onClick={() => setDrawer((d) => !d)} aria-expanded={drawer}>
+            {drawer ? "收合 ›" : `‹ 筆記 ${noted.length}`}
+          </button>
+          {drawer && (
+            <aside className="ndrawer" aria-label="筆記抽屜">
+              <div className="mono small muted" style={{ marginBottom: 10 }}>NOTES ✎ · {noted.length}</div>
+              {[...noted].sort((a, b) => (anchors[a.id] ?? 1e9) - (anchors[b.id] ?? 1e9)).map((h) => card(h))}
+            </aside>
+          )}
+        </>
+      )}
+
       {tool && (
         <div className="seltool" style={{ left: tool.x, top: tool.y }} onMouseDown={(e) => e.preventDefault()} role="toolbar" aria-label="劃線工具">
           {COLORS.map((c) => (
@@ -463,9 +671,24 @@ export default function Lesson({ weekNumber, chapters, appendix = [] }: { weekNu
       )}
 
       {editing && (
-        <div className="note-pop" style={popStyle} role="dialog" aria-label="筆記">
-          <div className="q mono small muted" style={{ marginBottom: 6, maxHeight: 48, overflow: 'hidden' }}>「{editing.h.text}」</div>
-          <textarea autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="在頁邊寫下想法…" />
+        <div ref={edRef} className={`note-pop note-ed ${mode === 'mobile' ? 'sheet' : ''}`} style={edStyle} role="dialog" aria-label="筆記">
+          <div className="ed-handle" onPointerDown={startDrag} title="拖曳移動">
+            {mode !== 'mobile' && <span className="grip" aria-hidden>⠿</span>}
+            <span className="q mono small muted">「{editing.h.text}」</span>
+          </div>
+          <MdToolbar get={() => taRef.current} set={mdSet} />
+          <textarea
+            ref={taRef}
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (mdKeyDown(e, mdSet)) return;
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); saveNote(); }
+              if (e.key === 'Escape') { e.preventDefault(); setEditing(null); }
+            }}
+            placeholder="在頁邊寫下想法…（⌘/Ctrl+Enter 儲存，Esc 取消）"
+          />
           <div className="row">
             <div className="swatches">
               {COLORS.map((c) => (
