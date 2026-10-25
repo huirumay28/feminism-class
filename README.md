@@ -275,3 +275,51 @@ Highlights are stored as chapter + unit + offsets. When content is restructured,
 | `source`, `askedOn` | the ChatGPT share link and date |
 
 Text in an opened toggle can be highlighted and annotated. Notes appear inline under the paragraph.
+
+## Organizations page
+
+The `/orgs` page introduces nine Taiwan women's/gender organizations (台灣女性權益組織地圖) with a distinct pink theme.
+
+### Content
+
+`content/orgs.json` defines:
+- Organization details (name, tags, mission, actions, features)
+- Latest events from each organization's website
+- Comparison table and Cool Dairy brand pillars mapping
+
+### Refreshing Events
+
+To keep the events data current, use the refresh API:
+
+```bash
+# Using cookie auth (after logging in to the site)
+curl -X POST https://your-site.vercel.app/api/org-events/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"events":{"tgeea":[{"title":"Event title","url":"https://..."}]}}'
+
+# Using passcode header
+curl -X POST https://your-site.vercel.app/api/org-events/refresh \
+  -H "Content-Type: application/json" \
+  -H "x-class-passcode: your-passcode" \
+  -d '{"events":{"orgId":[{"title":"Event title","url":"https://..."}]}}'
+```
+
+The endpoint accepts an `events` object mapping organization IDs to arrays of event objects:
+
+```json
+{
+  "events": {
+    "tgeea": [
+      { "title": "11/14 (六) 性平星期六", "url": "https://..." },
+      { "title": "11/11 (三) 性會性會", "url": "https://..." }
+    ],
+    "withred": [
+      { "title": "最新消息", "url": "https://withred.org/news" }
+    ]
+  }
+}
+```
+
+Organization IDs: `tgeea`, `withred`, `goh`, `awakening`, `wmw`, `ntu-wrc`, `twrf`, `mwf`, `daan`
+
+Protected by the same `CLASS_PASSCODE` used for site authentication.

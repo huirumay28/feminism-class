@@ -1,0 +1,298 @@
+{
+  "title": "台灣女性權益組織地圖",
+  "subtitle": "九個組織・同一格式・最新活動",
+  "description": "給 cool dairy 選公益夥伴用的快速導覽：每個組織是誰、爭取什麼、平常做什麼，以及官網上能點開的最新活動。",
+  "orgs": [
+    {
+      "id": "tgeea",
+      "nameZh": "台灣性別平等教育協會",
+      "nameEn": "Taiwan Gender Equity Education Association (TGEEA)",
+      "tags": ["性別教育", "文化觀念改革"],
+      "mission": "透過教育消除性別歧視，讓每個人不受性別刻板印象限制，自由發展。",
+      "fightsFor": "性別平等教育、性別多元尊重、身體自主與性暴力防治。",
+      "does": "培訓教師、開發性平教材與桌遊、舉辦講座及工作坊，並參與性平教育政策倡議。",
+      "feature": "從教育著手，改變下一代對性別的理解。",
+      "website": "https://tgeea.org.tw/",
+      "eventsUrl": "https://tgeea.org.tw/category/event/",
+      "coolDairyPillars": ["Individuality"],
+      "events": [
+        {
+          "title": "11/14 (六) TGEEA 性平星期六 #47｜從男女二元到看見多元，法律怎麼「管」性別——《花樣主體，同治國家》新書分享會",
+          "url": "https://tgeea.org.tw/event/43690/"
+        },
+        {
+          "title": "11/11 (三) 性會性會！性平主題交流小聚 #26 @台北",
+          "url": "https://tgeea.org.tw/event/43684/"
+        },
+        {
+          "title": "10/21 (三) TGEEA 繪客室｜LGBTQ+：每一種愛，都很重要",
+          "url": "https://tgeea.org.tw/event/43650/"
+        },
+        {
+          "title": "10/17 (六) TGEEA 性平星期六 #46｜我們都可能染上「長女病」：拆解「懂事」背後的性別期待",
+          "url": "https://tgeea.org.tw/event/43628/"
+        }
+      ]
+    },
+    {
+      "id": "withred",
+      "nameZh": "小紅帽",
+      "nameEn": "With Red",
+      "tags": ["月經平權", "身體自主", "去污名化"],
+      "mission": "讓月經不再成為任何人生活、受教育或參與社會的阻礙。",
+      "fightsFor": "消除月經貧窮、月經污名與月經資源分配不平等。",
+      "does": "提供生理用品與弱勢支持、推動校園月經教育、倡議公共場所提供生理用品、經營月經博物館及舉辦社會倡議活動。",
+      "feature": "聚焦一個具體議題，同時結合物資援助、教育與政策改革。",
+      "website": "https://withred.org/",
+      "eventsUrl": "https://withred.org/news",
+      "coolDairyPillars": ["Community"],
+      "events": [
+        {
+          "title": "最新消息",
+          "url": "https://withred.org/news"
+        }
+      ]
+    },
+    {
+      "id": "goh",
+      "nameZh": "勵馨基金會",
+      "nameEn": "Garden of Hope Foundation",
+      "tags": ["性別暴力防治", "女性與兒少保護"],
+      "mission": "協助遭受暴力、剝削與不平等待遇的女性及兒少重建生活，推動沒有性別暴力的社會。",
+      "fightsFor": "免於暴力的權利、人身安全、受害者保障與性別正義。",
+      "does": "提供家暴與性暴力受害者社工支持、安置與復原服務，協助兒少及移住者，並推動相關法律改革與性別教育。",
+      "feature": "直接救援與長期陪伴並重，也透過倡議改善制度。",
+      "website": "https://www.goh.org.tw/",
+      "eventsUrl": "https://www.goh.org.tw/latest-news/",
+      "coolDairyPillars": ["Autonomy"],
+      "events": [
+        {
+          "title": "桌遊破童婚、濾水器解取水困境　勵馨培力亞洲10國女孩把性別平等帶回社區",
+          "url": "https://www.goh.org.tw/latest-news/"
+        },
+        {
+          "title": "治療現場——精神醫療及心理的療癒哲學與跨專業協作",
+          "url": "https://www.goh.org.tw/latest-news/"
+        },
+        {
+          "title": "九合一選舉倒數 勵馨提出8項政策訴求——聚焦居住、托育與職場安全",
+          "url": "https://www.goh.org.tw/latest-news/"
+        },
+        {
+          "title": "國際女童日：投資女孩　創造不一樣的未來",
+          "url": "https://www.goh.org.tw/latest-news/"
+        }
+      ]
+    },
+    {
+      "id": "awakening",
+      "nameZh": "婦女新知基金會",
+      "nameEn": "Awakening Foundation",
+      "tags": ["女性主義", "法律改革", "制度性平權"],
+      "mission": "從法律、政策與社會制度著手，消除對女性的不平等待遇。",
+      "fightsFor": "身體自主、生育選擇權、婚姻家庭平權、職場平等、公共照顧與女性政治參與。",
+      "does": "研究性別政策、推動修法、監督政府、發表倡議聲明，並透過出版、講座與公共討論提升女性權益意識。",
+      "feature": "台灣婦女運動的重要倡議組織，重點是從制度根源改善女性處境。",
+      "website": "https://www.awakening.org.tw/",
+      "eventsUrl": "https://www.awakening.org.tw/news",
+      "coolDairyPillars": ["Autonomy"],
+      "events": [
+        {
+          "title": "不要再讓台灣育兒父母等了！從未滿3歲到8歲以下：托盟5年倡議育兒留停改革迎來關鍵進展",
+          "url": "https://www.awakening.org.tw/news/6306"
+        },
+        {
+          "title": "住院整合照護計畫執行成效公聽會：把術後照顧變成一份真正的工作",
+          "url": "https://www.awakening.org.tw/news/6302"
+        },
+        {
+          "title": "莫讓產假延長美意變成女性就業歧視！陪產假應同步同額增加",
+          "url": "https://www.awakening.org.tw/news/6299"
+        },
+        {
+          "title": "籲立法院勿拖延人事同意權之行使，應檢視監委被提名人之性別平等、人權履歷",
+          "url": "https://www.awakening.org.tw/news/6298"
+        }
+      ]
+    },
+    {
+      "id": "wmw",
+      "nameZh": "女性影像學會",
+      "nameEn": "Women Make Waves",
+      "tags": ["女性創作", "文化代表性", "性別觀點"],
+      "mission": "讓女性創作者與女性視角在電影及文化領域獲得更多能見度。",
+      "fightsFor": "女性影像創作的發聲空間、多元性別敘事與文化代表性。",
+      "does": "主辦台灣國際女性影展、放映國內外女性電影、舉辦映後座談、全國巡迴及國際影像交流。",
+      "feature": "以電影與藝術作為性別倡議工具，讓更多女性故事被看見。",
+      "website": "https://www.wmw.org.tw/",
+      "eventsUrl": "https://www.wmw.org.tw/",
+      "coolDairyPillars": ["Individuality"],
+      "events": [
+        {
+          "title": "2025 台灣國際女性影展",
+          "url": "https://www.wmw.org.tw/tw/2025"
+        },
+        {
+          "title": "2024 台灣國際女性影展",
+          "url": "https://www.wmw.org.tw/tw/2024"
+        }
+      ]
+    },
+    {
+      "id": "ntu-wrc",
+      "nameZh": "台大婦女研究室",
+      "nameEn": "NTU Women's Research Program (現為婦女與性別研究組)",
+      "tags": ["學術研究", "女性主義知識", "性別教育"],
+      "mission": "透過學術研究與教育，建立台灣女性及性別議題的知識基礎。",
+      "fightsFor": "女性在社會中的地位、性別角色、性別不平等與女性主義理論的知識累積。",
+      "does": "推動性別研究、學術出版、研究獎助、學術交流與大學性別研究課程。",
+      "feature": "與一般公益團體不同，主要透過學術研究累積知識，為性別教育與公共討論提供基礎。1985 年成立，1997 年開設台灣第一個婦女與性別研究學程。",
+      "website": "https://gender.psc.ntu.edu.tw/",
+      "eventsUrl": "https://gender.psc.ntu.edu.tw/activity/",
+      "coolDairyPillars": ["Individuality"],
+      "events": [
+        {
+          "title": "風險、韌性與社會照顧（2026/05/25）",
+          "url": "https://gender.psc.ntu.edu.tw/fwgs_podcast_ep5/"
+        },
+        {
+          "title": "發聲的重量：從社區行動到國際講台 NGO CSW70青年代表分享會 (2026/5/31)",
+          "url": "https://gender.psc.ntu.edu.tw/%e3%80%90%e6%b4%bb%e5%8b%95%e5%ae%a3%e5%82%b3%e3%80%912026-5-31%ef%bc%88%e6%97%a5%ef%bc%89%e3%80%8c%e7%99%bc%e8%81%b2%e7%9a%84%e9%87%8d%e9%87%8f%ef%bc%9a%e5%be%9e%e7%a4%be%e5%8d%80%e8%a1%8c%e5%8b%95/"
+        },
+        {
+          "title": "2026 年臺灣大學婦女與性別研究碩博士獎助論文計畫",
+          "url": "https://gender.psc.ntu.edu.tw/2026-%e5%b9%b4%e8%87%ba%e7%81%a3%e5%a4%a7%e5%ad%b8%e5%a9%a6%e5%a5%b3%e8%88%87%e6%80%a7%e5%88%a5%e7%a0%94%e7%a9%b6%e7%a2%a9%e5%8d%9a%e5%a3%ab-%e7%8d%8e%e5%8a%a9%e8%ab%96%e6%96%87%e8%a8%88%e7%95%ab/"
+        }
+      ]
+    },
+    {
+      "id": "twrf",
+      "nameZh": "婦女救援基金會",
+      "nameEn": "Taipei Women's Rescue Foundation (TWRF)",
+      "tags": ["性別暴力", "反人口販運", "女性人權"],
+      "mission": "救援遭受性別暴力與剝削的女性及兒少，協助她們恢復自主生活，並推動社會改革。",
+      "fightsFor": "免於性剝削、人口販運、家庭暴力與數位性暴力的權利，以及受害者的司法保障。",
+      "does": "提供受害者法律與心理支持、協助報案與出庭、推動反性別暴力修法，也透過「阿嬤家」保存台籍慰安婦歷史、推動女性人權教育。",
+      "feature": "從實際救援受害者出發，結合人權倡議與法律改革。",
+      "website": "https://www.twrf.org.tw/",
+      "eventsUrl": "https://www.twrf.org.tw/",
+      "coolDairyPillars": ["Autonomy"],
+      "events": [
+        {
+          "title": "最新消息與活動",
+          "url": "https://www.twrf.org.tw/"
+        }
+      ]
+    },
+    {
+      "id": "mwf",
+      "nameZh": "現代婦女基金會",
+      "nameEn": "Modern Women's Foundation",
+      "tags": ["家暴防治", "性暴力防治", "司法協助"],
+      "mission": "終結性別暴力，讓每個人都能在安全、有尊嚴的環境中生活。",
+      "fightsFor": "人身安全、免於家暴與性暴力的權利，以及受害者的法律保障。",
+      "does": "提供家暴、性侵害與性騷擾受害者諮詢及支持，協助高衝突家庭處理司法與家庭問題，並推動性別暴力防治政策。",
+      "feature": "專注第一線保護與司法協助，協助受害者走出暴力、重新建立生活。",
+      "website": "https://www.38.org.tw/",
+      "eventsUrl": "https://www.38.org.tw/news",
+      "coolDairyPillars": ["Autonomy"],
+      "events": [
+        {
+          "title": "2026 打破孤立，停止影像性暴力",
+          "url": "https://www.38.org.tw/initiative/63271"
+        },
+        {
+          "title": "2025 讓惡意收斂，停止影像性暴力",
+          "url": "https://www.38.org.tw/initiative/47081"
+        },
+        {
+          "title": "2024 Stand By You 相信傾聽 陪伴前行",
+          "url": "https://www.38.org.tw/initiative/26906"
+        }
+      ]
+    },
+    {
+      "id": "daan",
+      "nameZh": "臺北市大安婦女支持培力中心",
+      "nameEn": "Daan Women's Support & Empowerment Center",
+      "tags": ["女性培力", "弱勢家庭", "社區支持"],
+      "mission": "協助處於弱勢或生活困境的女性建立自信、取得資源，提升自主生活的能力。",
+      "fightsFor": "女性的生活自主、社會參與機會，以及弱勢家庭獲得支持的權利。",
+      "does": "提供法律諮詢、社會資源轉介、支持服務及培力活動，過去尤其著重單親女性、未婚懷孕女性與家庭。",
+      "feature": "比起全國性的政策倡議，更著重地方社區中的女性支持與實際生活需求。這是臺北市政府委託經營的服務中心，而非獨立的全國性倡議基金會。",
+      "website": "https://www.daanfamily.com/",
+      "eventsUrl": "https://www.daanfamily.com/news",
+      "coolDairyPillars": ["Community"],
+      "note": "臺北市政府委託經營的服務中心",
+      "events": [
+        {
+          "title": "115年婦女節活動「WHY 女人」變身行動派對-「自我實現不設限」",
+          "url": "https://www.daanfamily.com/news"
+        },
+        {
+          "title": "花藝手作紓壓課程",
+          "url": "https://www.daanfamily.com/news"
+        },
+        {
+          "title": "當我們舞在一起",
+          "url": "https://www.daanfamily.com/news"
+        }
+      ]
+    }
+  ],
+  "comparison": {
+    "table": [
+      {
+        "org": "性平教育協會",
+        "issue": "性別刻板印象、性平教育",
+        "method": "教育、教材、倡議"
+      },
+      {
+        "org": "小紅帽",
+        "issue": "月經貧窮、月經污名",
+        "method": "物資、教育、政策"
+      },
+      {
+        "org": "勵馨基金會",
+        "issue": "家暴、性暴力、兒少保護",
+        "method": "救援、陪伴、倡議"
+      },
+      {
+        "org": "婦女新知",
+        "issue": "女性權利與制度不平等",
+        "method": "修法、政策監督"
+      },
+      {
+        "org": "女性影像學會",
+        "issue": "女性創作與文化發聲",
+        "method": "影展、藝術、文化"
+      },
+      {
+        "org": "台大婦女研究室",
+        "issue": "性別研究與女性主義",
+        "method": "研究、學術、教育"
+      },
+      {
+        "org": "婦女救援基金會",
+        "issue": "性剝削、人口販運、性別暴力",
+        "method": "救援、修法、人權教育"
+      },
+      {
+        "org": "現代婦女基金會",
+        "issue": "家暴、性侵害、性騷擾",
+        "method": "保護服務、司法協助"
+      },
+      {
+        "org": "大安婦女支持培力中心",
+        "issue": "弱勢女性、生活自主",
+        "method": "社區服務、資源、培力"
+      }
+    ],
+    "coolDairy": {
+      "Autonomy": "婦女新知、勵馨、婦女救援、現代婦女基金會。從法律權利、人身安全到生活自主，協助女性真正掌握人生選擇權。",
+      "Individuality": "女性影像學會、性平教育協會、台大婦女研究室。挑戰傳統性別角色，讓女性有更多自由表達與定義自己的空間。",
+      "Community": "小紅帽、大安婦女支持培力中心。透過共同議題、活動及支持網絡，讓女性彼此連結、獲得支持。"
+    },
+    "note": "這是依品牌理念做的初步分類，不代表各組織只對應單一支柱。婦女新知主要在改變造成不平等的制度；勵馨、婦援與現代婦女基金會則有大量直接服務受害者的工作；女性影像學會與性平教育協會則更著重文化、觀念及教育層面的改變。這個差異會直接影響 Cool Dairy 未來的捐款究竟是支持制度改革、直接援助，還是文化教育。"
+  }
+}
