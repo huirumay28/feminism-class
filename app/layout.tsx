@@ -23,6 +23,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </div>
           <nav>
             <Link href="/">目錄</Link>
+            <Link href="/orgs">組織</Link>
             <Link href="/notebook">我的筆記</Link>
           </nav>
         </header>
