@@ -78,6 +78,9 @@ async function getOrgsWithEvents(): Promise<OrgsData> {
   }
 }
 
+// Allow blocking route for runtime Redis access (Cache Components compatible)
+export const instant = false;
+
 export default async function OrgsPage() {
   const data = await getOrgsWithEvents();
   return (
