@@ -291,17 +291,32 @@ The `/orgs` page introduces nine Taiwan women's/gender organizations (台灣女�
 
 To keep the events data current, use the refresh API:
 
+**Auto-refresh mode** (scrapes all org websites):
+
 ```bash
 # Using cookie auth (after logging in to the site)
-curl -X POST https://your-site.vercel.app/api/org-events/refresh \
-  -H "Content-Type: application/json" \
-  -d '{"events":{"tgeea":[{"title":"Event title","url":"https://..."}]}}'
+curl -X POST https://your-site.vercel.app/api/org-events/refresh
 
 # Using passcode header
 curl -X POST https://your-site.vercel.app/api/org-events/refresh \
+  -H "x-class-passcode: your-passcode"
+
+# Or explicitly request auto mode
+curl -X POST https://your-site.vercel.app/api/org-events/refresh \
   -H "Content-Type: application/json" \
   -H "x-class-passcode: your-passcode" \
-  -d '{"events":{"orgId":[{"title":"Event title","url":"https://..."}]}}'
+  -d '{"auto":true}'
+```
+
+Auto mode fetches each organization's `eventsUrl` and scrapes 2-4 recent titled links. Results are stored in Redis and appear immediately on the `/orgs` page.
+
+**Manual mode** (specify exact events):
+
+```bash
+curl -X POST https://your-site.vercel.app/api/org-events/refresh \
+  -H "Content-Type: application/json" \
+  -H "x-class-passcode: your-passcode" \
+  -d '{"events":{"tgeea":[{"title":"Event title","url":"https://..."}]}}'
 ```
 
 The endpoint accepts an `events` object mapping organization IDs to arrays of event objects:
@@ -321,5 +336,7 @@ The endpoint accepts an `events` object mapping organization IDs to arrays of ev
 ```
 
 Organization IDs: `tgeea`, `withred`, `goh`, `awakening`, `wmw`, `ntu-wrc`, `twrf`, `mwf`, `daan`
+
+The `/orgs` page loads events from Redis when available, falling back to the static `content/orgs.json` when Redis is empty or unavailable.
 
 Protected by the same `CLASS_PASSCODE` used for site authentication.

@@ -1,5 +1,5 @@
 import orgsData from '@/content/orgs.json';
-import Link from 'next/link';
+import { getRedisClient } from '@/lib/storage';
 
 interface Org {
   id: string;
@@ -39,9 +39,47 @@ interface OrgsData {
   };
 }
 
-const data = orgsData as unknown as OrgsData;
+interface OrgEventsUpdate {
+  [orgId: string]: { title: string; url: string }[];
+}
 
-export default function OrgsPage() {
+const ORGS_EVENTS_KEY = 'org-events';
+
+async function getOrgsWithEvents(): Promise<OrgsData> {
+  const baseData = orgsData as unknown as OrgsData;
+  
+  // Try to load refreshed events from Redis
+  const redis = getRedisClient();
+  if (!redis) {
+    return baseData;
+  }
+
+  try {
+    const refreshedEvents = await redis.get<OrgEventsUpdate>(ORGS_EVENTS_KEY);
+    if (!refreshedEvents || Object.keys(refreshedEvents).length === 0) {
+      return baseData;
+    }
+
+    // Overlay refreshed events onto base data
+    const orgsWithRefreshedEvents = baseData.orgs.map((org) => {
+      if (refreshedEvents[org.id]) {
+        return { ...org, events: refreshedEvents[org.id] };
+      }
+      return org;
+    });
+
+    return {
+      ...baseData,
+      orgs: orgsWithRefreshedEvents,
+    };
+  } catch (error) {
+    console.error('Failed to load refreshed events from Redis:', error);
+    return baseData;
+  }
+}
+
+export default async function OrgsPage() {
+  const data = await getOrgsWithEvents();
   return (
     <div className="wrap">
       <div className="page orgs-page">
